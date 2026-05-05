@@ -18,6 +18,7 @@ const GENRES = [
 
 export function Home() {
   const [gender, setGender] = useState<"Boy" | "Girl" | "Neutral">("Neutral");
+  const [ageGroup, setAgeGroup] = useState<"3-5" | "6-8" | "9+">("6-8");
   const [genre, setGenre] = useState<string>("Animals");
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
@@ -33,7 +34,7 @@ export function Home() {
   });
 
   const handleGenerate = () => {
-    generateMutation.mutate({ data: { gender, genre } });
+    generateMutation.mutate({ data: { gender, genre, ageGroup } });
   };
 
   const handleDownload = () => {
@@ -68,6 +69,24 @@ export function Home() {
                 <div key={g} className="flex items-center space-x-2">
                   <RadioGroupItem value={g} id={`gender-${g}`} data-testid={`input-gender-${g.toLowerCase()}`} />
                   <Label htmlFor={`gender-${g}`} className="text-base cursor-pointer">{g}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-lg font-display font-semibold text-primary">Age group</Label>
+            <RadioGroup
+              value={ageGroup}
+              onValueChange={(v) => setAgeGroup(v as any)}
+              className="grid grid-cols-1 gap-3"
+            >
+              {(["3-5", "6-8", "9+"] as const).map((age) => (
+                <div key={age} className="flex items-center space-x-2">
+                  <RadioGroupItem value={age} id={`age-${age}`} data-testid={`input-age-${age}`} />
+                  <Label htmlFor={`age-${age}`} className="text-base cursor-pointer">
+                    {age === "3-5" ? "3–5 yrs (simple)" : age === "6-8" ? "6–8 yrs (medium)" : "9+ yrs (detailed)"}
+                  </Label>
                 </div>
               ))}
             </RadioGroup>

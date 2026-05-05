@@ -136,9 +136,13 @@ components:
           enum: [Boy, Girl, Neutral]
         genre:
           type: string
+        ageGroup:
+          type: string
+          enum: ["3-5", "6-8", "9+"]
       required:
         - gender
         - genre
+        - ageGroup
 
     GeneratedImage:
       type: object
@@ -148,6 +152,8 @@ components:
         gender:
           type: string
         genre:
+          type: string
+        ageGroup:
           type: string
         imageData:
           type: string
@@ -159,6 +165,7 @@ components:
         - id
         - gender
         - genre
+        - ageGroup
         - imageData
         - createdAt
 

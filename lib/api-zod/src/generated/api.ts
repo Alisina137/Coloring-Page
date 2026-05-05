@@ -22,12 +22,14 @@ export const HealthCheckResponse = zod.object({
 export const GenerateColoringPageBody = zod.object({
   gender: zod.enum(["Boy", "Girl", "Neutral"]),
   genre: zod.string(),
+  ageGroup: zod.enum(["3-5", "6-8", "9+"]),
 });
 
 export const GenerateColoringPageResponse = zod.object({
   id: zod.number(),
   gender: zod.string(),
   genre: zod.string(),
+  ageGroup: zod.string(),
   imageData: zod.string().describe("Base64-encoded image data"),
   createdAt: zod.coerce.date(),
 });
@@ -46,6 +48,7 @@ export const GetColoringHistoryResponseItem = zod.object({
   id: zod.number(),
   gender: zod.string(),
   genre: zod.string(),
+  ageGroup: zod.string(),
   imageData: zod.string().describe("Base64-encoded image data"),
   createdAt: zod.coerce.date(),
 });

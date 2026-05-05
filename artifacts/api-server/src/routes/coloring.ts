@@ -43,7 +43,7 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
     return;
   }
 
-  const { gender, genre } = parsed.data;
+  const { gender, genre, ageGroup } = parsed.data;
   const genreDescription = GENRES[genre] ?? genre;
   const genderAdjective =
     gender === "Boy"
@@ -52,16 +52,23 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
         ? "girl-friendly"
         : "child-friendly";
 
-  const prompt = `A simple black and white coloring page for children. ${genderAdjective} ${genreDescription} theme. Clean bold outlines only, no shading, no colors, no grey fills, pure white background with thick black outlines only. Printable coloring book line art style. Simple shapes suitable for young children to color in.`;
+  const ageDescription =
+    ageGroup === "3-5"
+      ? "toddler age 3-5, very simple large bold shapes with minimal detail"
+      : ageGroup === "6-8"
+        ? "child age 6-8, moderately detailed with clear distinct regions to color"
+        : "older child age 9+, more detailed and intricate with finer elements";
 
-  req.log.info({ gender, genre }, "Generating coloring page");
+  const prompt = `A simple black and white coloring page for children. ${genderAdjective} ${genreDescription} theme. Complexity level: ${ageDescription}. Clean bold outlines only, no shading, no colors, no grey fills, pure white background with thick black outlines only. Printable coloring book line art style.`;
+
+  req.log.info({ gender, genre, ageGroup }, "Generating coloring page");
 
   const imageBuffer = await generateImageBuffer(prompt, "1024x1024");
   const imageData = imageBuffer.toString("base64");
 
   const [page] = await db
     .insert(coloringPagesTable)
-    .values({ gender, genre, imageData })
+    .values({ gender, genre, ageGroup, imageData })
     .returning();
 
   res.json(GenerateColoringPageResponse.parse(page));

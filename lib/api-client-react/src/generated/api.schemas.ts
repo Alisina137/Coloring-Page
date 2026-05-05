@@ -18,15 +18,26 @@ export const GenerateColoringPageBodyGender = {
   Neutral: "Neutral",
 } as const;
 
+export type GenerateColoringPageBodyAgeGroup =
+  (typeof GenerateColoringPageBodyAgeGroup)[keyof typeof GenerateColoringPageBodyAgeGroup];
+
+export const GenerateColoringPageBodyAgeGroup = {
+  "3-5": "3-5",
+  "6-8": "6-8",
+  "9+": "9+",
+} as const;
+
 export interface GenerateColoringPageBody {
   gender: GenerateColoringPageBodyGender;
   genre: string;
+  ageGroup: GenerateColoringPageBodyAgeGroup;
 }
 
 export interface GeneratedImage {
   id: number;
   gender: string;
   genre: string;
+  ageGroup: string;
   /** Base64-encoded image data */
   imageData: string;
   createdAt: string;
