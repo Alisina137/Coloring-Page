@@ -14,3 +14,69 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Generate a black-and-white coloring page using AI
+ * @summary Generate a coloring page
+ */
+export const GenerateColoringPageBody = zod.object({
+  gender: zod.enum(["Boy", "Girl", "Neutral"]),
+  genre: zod.string(),
+});
+
+export const GenerateColoringPageResponse = zod.object({
+  id: zod.number(),
+  gender: zod.string(),
+  genre: zod.string(),
+  imageData: zod.string().describe("Base64-encoded image data"),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * Returns a list of previously generated coloring pages
+ * @summary Get generation history
+ */
+export const getColoringHistoryQueryLimitDefault = 20;
+
+export const GetColoringHistoryQueryParams = zod.object({
+  limit: zod.coerce.number().default(getColoringHistoryQueryLimitDefault),
+});
+
+export const GetColoringHistoryResponseItem = zod.object({
+  id: zod.number(),
+  gender: zod.string(),
+  genre: zod.string(),
+  imageData: zod.string().describe("Base64-encoded image data"),
+  createdAt: zod.coerce.date(),
+});
+export const GetColoringHistoryResponse = zod.array(
+  GetColoringHistoryResponseItem,
+);
+
+/**
+ * Deletes a coloring page from history
+ * @summary Delete a history item
+ */
+export const DeleteColoringHistoryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * Returns stats about generated pages (totals by genre and gender)
+ * @summary Get coloring stats
+ */
+export const GetColoringStatsResponse = zod.object({
+  total: zod.number(),
+  byGenre: zod.array(
+    zod.object({
+      label: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  byGender: zod.array(
+    zod.object({
+      label: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+});

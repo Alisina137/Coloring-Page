@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: coloring
+    description: AI coloring page generation
 paths:
   /healthz:
     get:
@@ -24,6 +26,98 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /coloring/generate:
+    post:
+      operationId: generateColoringPage
+      tags: [coloring]
+      summary: Generate a coloring page
+      description: Generate a black-and-white coloring page using AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateColoringPageBody"
+      responses:
+        "200":
+          description: Generated coloring page image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedImage"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /coloring/history:
+    get:
+      operationId: getColoringHistory
+      tags: [coloring]
+      summary: Get generation history
+      description: Returns a list of previously generated coloring pages
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of generated images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GeneratedImage"
+
+  /coloring/history/{id}:
+    delete:
+      operationId: deleteColoringHistory
+      tags: [coloring]
+      summary: Delete a history item
+      description: Deletes a coloring page from history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted successfully
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /coloring/stats:
+    get:
+      operationId: getColoringStats
+      tags: [coloring]
+      summary: Get coloring stats
+      description: Returns stats about generated pages (totals by genre and gender)
+      responses:
+        "200":
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ColoringStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +128,73 @@ components:
       required:
         - status
 
+    GenerateColoringPageBody:
+      type: object
+      properties:
+        gender:
+          type: string
+          enum: [Boy, Girl, Neutral]
+        genre:
+          type: string
+      required:
+        - gender
+        - genre
+
+    GeneratedImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        gender:
+          type: string
+        genre:
+          type: string
+        imageData:
+          type: string
+          description: Base64-encoded image data
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - gender
+        - genre
+        - imageData
+        - createdAt
+
+    ColoringStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        byGenre:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatEntry"
+        byGender:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatEntry"
+      required:
+        - total
+        - byGenre
+        - byGender
+
+    StatEntry:
+      type: object
+      properties:
+        label:
+          type: string
+        count:
+          type: integer
+      required:
+        - label
+        - count
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

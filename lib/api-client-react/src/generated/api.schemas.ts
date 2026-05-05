@@ -8,3 +8,45 @@
 export interface HealthStatus {
   status: string;
 }
+
+export type GenerateColoringPageBodyGender =
+  (typeof GenerateColoringPageBodyGender)[keyof typeof GenerateColoringPageBodyGender];
+
+export const GenerateColoringPageBodyGender = {
+  Boy: "Boy",
+  Girl: "Girl",
+  Neutral: "Neutral",
+} as const;
+
+export interface GenerateColoringPageBody {
+  gender: GenerateColoringPageBodyGender;
+  genre: string;
+}
+
+export interface GeneratedImage {
+  id: number;
+  gender: string;
+  genre: string;
+  /** Base64-encoded image data */
+  imageData: string;
+  createdAt: string;
+}
+
+export interface StatEntry {
+  label: string;
+  count: number;
+}
+
+export interface ColoringStats {
+  total: number;
+  byGenre: StatEntry[];
+  byGender: StatEntry[];
+}
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export type GetColoringHistoryParams = {
+  limit?: number;
+};

@@ -5,18 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  ColoringStats,
+  ErrorResponse,
+  GenerateColoringPageBody,
+  GeneratedImage,
+  GetColoringHistoryParams,
+  HealthStatus,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -92,6 +102,353 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Generate a black-and-white coloring page using AI
+ * @summary Generate a coloring page
+ */
+export const getGenerateColoringPageUrl = () => {
+  return `/api/coloring/generate`;
+};
+
+export const generateColoringPage = async (
+  generateColoringPageBody: GenerateColoringPageBody,
+  options?: RequestInit,
+): Promise<GeneratedImage> => {
+  return customFetch<GeneratedImage>(getGenerateColoringPageUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(generateColoringPageBody),
+  });
+};
+
+export const getGenerateColoringPageMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateColoringPage>>,
+    TError,
+    { data: BodyType<GenerateColoringPageBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateColoringPage>>,
+  TError,
+  { data: BodyType<GenerateColoringPageBody> },
+  TContext
+> => {
+  const mutationKey = ["generateColoringPage"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateColoringPage>>,
+    { data: BodyType<GenerateColoringPageBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateColoringPage(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateColoringPageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateColoringPage>>
+>;
+export type GenerateColoringPageMutationBody =
+  BodyType<GenerateColoringPageBody>;
+export type GenerateColoringPageMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Generate a coloring page
+ */
+export const useGenerateColoringPage = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateColoringPage>>,
+    TError,
+    { data: BodyType<GenerateColoringPageBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateColoringPage>>,
+  TError,
+  { data: BodyType<GenerateColoringPageBody> },
+  TContext
+> => {
+  return useMutation(getGenerateColoringPageMutationOptions(options));
+};
+
+/**
+ * Returns a list of previously generated coloring pages
+ * @summary Get generation history
+ */
+export const getGetColoringHistoryUrl = (params?: GetColoringHistoryParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/coloring/history?${stringifiedParams}`
+    : `/api/coloring/history`;
+};
+
+export const getColoringHistory = async (
+  params?: GetColoringHistoryParams,
+  options?: RequestInit,
+): Promise<GeneratedImage[]> => {
+  return customFetch<GeneratedImage[]>(getGetColoringHistoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetColoringHistoryQueryKey = (
+  params?: GetColoringHistoryParams,
+) => {
+  return [`/api/coloring/history`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetColoringHistoryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getColoringHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetColoringHistoryParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getColoringHistory>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetColoringHistoryQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getColoringHistory>>
+  > = ({ signal }) => getColoringHistory(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getColoringHistory>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetColoringHistoryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getColoringHistory>>
+>;
+export type GetColoringHistoryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get generation history
+ */
+
+export function useGetColoringHistory<
+  TData = Awaited<ReturnType<typeof getColoringHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetColoringHistoryParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getColoringHistory>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetColoringHistoryQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Deletes a coloring page from history
+ * @summary Delete a history item
+ */
+export const getDeleteColoringHistoryUrl = (id: number) => {
+  return `/api/coloring/history/${id}`;
+};
+
+export const deleteColoringHistory = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteColoringHistoryUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteColoringHistoryMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteColoringHistory>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteColoringHistory>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteColoringHistory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteColoringHistory>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteColoringHistory(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteColoringHistoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteColoringHistory>>
+>;
+
+export type DeleteColoringHistoryMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete a history item
+ */
+export const useDeleteColoringHistory = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteColoringHistory>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteColoringHistory>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteColoringHistoryMutationOptions(options));
+};
+
+/**
+ * Returns stats about generated pages (totals by genre and gender)
+ * @summary Get coloring stats
+ */
+export const getGetColoringStatsUrl = () => {
+  return `/api/coloring/stats`;
+};
+
+export const getColoringStats = async (
+  options?: RequestInit,
+): Promise<ColoringStats> => {
+  return customFetch<ColoringStats>(getGetColoringStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetColoringStatsQueryKey = () => {
+  return [`/api/coloring/stats`] as const;
+};
+
+export const getGetColoringStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getColoringStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getColoringStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetColoringStatsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getColoringStats>>
+  > = ({ signal }) => getColoringStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getColoringStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetColoringStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getColoringStats>>
+>;
+export type GetColoringStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get coloring stats
+ */
+
+export function useGetColoringStats<
+  TData = Awaited<ReturnType<typeof getColoringStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getColoringStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetColoringStatsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
