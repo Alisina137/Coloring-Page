@@ -1,0 +1,75 @@
+Upgrade my existing AI coloring page web app into a premium, subscription-based product for parents and children.
+
+GOAL:
+Transform the app from a simple image generator into a structured learning platform that improves children's creativity, focus, and motor skills.
+
+CORE FEATURES TO ADD:
+
+1. STORY MODE (VERY IMPORTANT)
+- Each coloring page should be part of a connected story
+- Example: “A day in the park”, “Space adventure”, “Animal friends”
+- Generate 3–5 pages per story sequence
+- Add a short child-friendly sentence under each page
+
+2. SMART DIFFICULTY SYSTEM
+- Based on age (3–5, 6–8, 9+)
+- Control:
+  - Number of objects
+  - Line complexity
+  - Background details
+- Store user progress and gradually increase difficulty
+
+3. PARENT DASHBOARD
+- Show:
+  - Total coloring time
+  - Number of completed pages
+  - Estimated skill improvements (focus, creativity)
+- Simple UI with progress bars
+
+4. DAILY & WEEKLY CONTENT (SUBSCRIPTION HOOK)
+- Generate:
+  - Daily coloring challenge
+  - Weekly themed packs
+- Lock premium packs behind subscription
+
+5. SMART COLOR GUIDE MODE
+- Instead of only blurred preview:
+  - Add step-by-step coloring suggestions
+  - Example:
+    Step 1: Color the sky blue
+    Step 2: Color the shirt red
+    Step 3: Add details
+
+6. SAVE & GALLERY
+- Allow users to save generated pages
+- Create a personal gallery for each child
+
+7. MULTIPLE CHILD PROFILES
+- Parent can create profiles (name, age)
+- Each child has their own progress
+
+8. UX IMPROVEMENTS
+- Add fun animations when generating
+- Add “reward badges” after completing pages
+- Use friendly child-focused UI
+
+9. PRINT OPTIMIZATION
+- Ensure B&W images are perfectly printable
+- Add “Download PDF Book” feature
+
+10. MONETIZATION
+- Free: limited daily generations
+- Premium:
+  - Unlimited generations
+  - Story mode
+  - Weekly packs
+  - Progress tracking
+
+TECH NOTES:
+- Keep current UI but enhance it
+- Use modular React components
+- Store user data locally or simple backend
+- Focus on clean UX
+
+IMPORTANT:
+Make the app feel like a learning companion, not just a generator.
