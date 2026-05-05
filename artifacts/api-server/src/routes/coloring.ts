@@ -54,14 +54,14 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
 
   const ageDescription =
     ageGroup === "3-5"
-      ? "toddler age 3-5, very simple large bold shapes with minimal detail"
+      ? "very few elements, maximum 3-4 large simple objects, huge bold shapes, absolutely no fine details or small parts"
       : ageGroup === "6-8"
-        ? "child age 6-8, moderately detailed with clear distinct regions to color"
-        : "older child age 9+, more detailed and intricate with finer elements";
+        ? "moderate number of elements, medium-sized shapes with some secondary details, clear distinct regions"
+        : "many elements, rich scene with fine details, small intricate parts, layered composition";
 
   const customPart = description ? ` Specifically featuring: ${description}.` : "";
 
-  const prompt = `A vibrant flat-color children's cartoon illustration. ${genderAdjective} ${genreDescription} theme. Complexity level: ${ageDescription}.${customPart} Bold thick black outlines with distinct flat color regions, no gradients, no shading, no textures. Pure white background. Bright cheerful saturated colors. Kid-friendly cartoon style suitable as a coloring page reference.`;
+  const prompt = `A vibrant flat-color children's cartoon illustration. ${genderAdjective} ${genreDescription} theme with a full natural background and environment — sky, ground, setting — preserved and richly colored.${customPart} Detail level: ${ageDescription}. Bold thick black outlines with distinct flat color regions. No gradients, no shading, no textures. Bright cheerful saturated colors. Kid-friendly cartoon style suitable as a coloring page reference.`;
 
   req.log.info({ gender, genre, ageGroup, description }, "Generating coloring page");
 
