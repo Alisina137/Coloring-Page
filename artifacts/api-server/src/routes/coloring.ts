@@ -61,23 +61,16 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
 
   const customPart = description ? ` Specifically featuring: ${description}.` : "";
 
-  const bwPrompt = `A simple black and white coloring page for children. ${genderAdjective} ${genreDescription} theme. Complexity level: ${ageDescription}.${customPart} Clean bold outlines only, no shading, no colors, no grey fills, pure white background with thick black outlines only. Printable coloring book line art style.`;
+  const prompt = `A vibrant flat-color children's cartoon illustration. ${genderAdjective} ${genreDescription} theme. Complexity level: ${ageDescription}.${customPart} Bold thick black outlines with distinct flat color regions, no gradients, no shading, no textures. Pure white background. Bright cheerful saturated colors. Kid-friendly cartoon style suitable as a coloring page reference.`;
 
-  const coloredPrompt = `A vibrant, fully colored children's illustration. ${genderAdjective} ${genreDescription} theme.${customPart} Bright, cheerful, saturated colors. Kid-friendly cartoon style. Same composition and complexity as a ${ageDescription} coloring page reference. Clear distinct color regions with visible outlines. Use as a coloring reference guide.`;
+  req.log.info({ gender, genre, ageGroup, description }, "Generating coloring page");
 
-  req.log.info({ gender, genre, ageGroup, description }, "Generating B&W and colored coloring pages");
-
-  const [bwBuffer, coloredBuffer] = await Promise.all([
-    generateImageBuffer(bwPrompt, "1024x1024"),
-    generateImageBuffer(coloredPrompt, "1024x1024"),
-  ]);
-
-  const imageData = bwBuffer.toString("base64");
-  const coloredImageData = coloredBuffer.toString("base64");
+  const imageBuffer = await generateImageBuffer(prompt, "1024x1024");
+  const imageData = imageBuffer.toString("base64");
 
   const [page] = await db
     .insert(coloringPagesTable)
-    .values({ gender, genre, ageGroup, description: description ?? null, imageData, coloredImageData })
+    .values({ gender, genre, ageGroup, description: description ?? null, imageData })
     .returning();
 
   res.json(GenerateColoringPageResponse.parse(page));
