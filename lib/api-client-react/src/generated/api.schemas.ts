@@ -31,11 +31,10 @@ export interface GenerateColoringPageBody {
   gender: GenerateColoringPageBodyGender;
   genre: string;
   ageGroup: GenerateColoringPageBodyAgeGroup;
-  /**
-   * Optional custom description of what to draw
-   * @nullable
-   */
+  /** @nullable */
   description?: string | null;
+  /** @nullable */
+  profileId?: number | null;
 }
 
 export interface GeneratedImage {
@@ -45,14 +44,15 @@ export interface GeneratedImage {
   ageGroup: string;
   /** @nullable */
   description?: string | null;
-  /** Base64-encoded B&W image data */
   imageData: string;
-  /**
-   * Base64-encoded colored reference image data
-   * @nullable
-   */
+  /** @nullable */
   coloredImageData?: string | null;
   createdAt: string;
+}
+
+export interface ColorGuideResponse {
+  id: number;
+  steps: string[];
 }
 
 export interface StatEntry {
@@ -66,10 +66,94 @@ export interface ColoringStats {
   byGender: StatEntry[];
 }
 
+export interface ChildProfile {
+  id: number;
+  name: string;
+  ageGroup: string;
+  avatarEmoji: string;
+  totalPages: number;
+  totalMinutes: number;
+  currentDifficulty: number;
+  createdAt: string;
+}
+
+export type CreateProfileBodyAgeGroup =
+  (typeof CreateProfileBodyAgeGroup)[keyof typeof CreateProfileBodyAgeGroup];
+
+export const CreateProfileBodyAgeGroup = {
+  "3-5": "3-5",
+  "6-8": "6-8",
+  "9+": "9+",
+} as const;
+
+export interface CreateProfileBody {
+  name: string;
+  ageGroup: CreateProfileBodyAgeGroup;
+  avatarEmoji: string;
+}
+
+export type GenerateStoryBodyAgeGroup =
+  (typeof GenerateStoryBodyAgeGroup)[keyof typeof GenerateStoryBodyAgeGroup];
+
+export const GenerateStoryBodyAgeGroup = {
+  "3-5": "3-5",
+  "6-8": "6-8",
+  "9+": "9+",
+} as const;
+
+export type GenerateStoryBodyGender =
+  (typeof GenerateStoryBodyGender)[keyof typeof GenerateStoryBodyGender];
+
+export const GenerateStoryBodyGender = {
+  Boy: "Boy",
+  Girl: "Girl",
+  Neutral: "Neutral",
+} as const;
+
+export interface GenerateStoryBody {
+  genre: string;
+  ageGroup: GenerateStoryBodyAgeGroup;
+  gender: GenerateStoryBodyGender;
+  /**
+   * @minimum 3
+   * @maximum 5
+   */
+  pageCount: number;
+  /** @nullable */
+  profileId?: number | null;
+}
+
+export interface StoryPage {
+  id: number;
+  pageNumber: number;
+  sentence: string;
+  imageData: string;
+}
+
+export interface StoryResponse {
+  id: number;
+  title: string;
+  theme: string;
+  genre: string;
+  totalPages: number;
+  pages: StoryPage[];
+  createdAt: string;
+}
+
+export interface DailyChallengeResponse {
+  id: number;
+  challengeDate: string;
+  genre: string;
+  theme: string;
+  /** @nullable */
+  imageData?: string | null;
+}
+
 export interface ErrorResponse {
   error: string;
 }
 
 export type GetColoringHistoryParams = {
   limit?: number;
+  profileId?: number;
 };

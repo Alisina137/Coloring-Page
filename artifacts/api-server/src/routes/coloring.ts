@@ -110,6 +110,40 @@ router.delete("/coloring/history/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
+router.get("/coloring/color-guide/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [page] = await db.select().from(coloringPagesTable).where(eq(coloringPagesTable.id, id));
+  if (!page) { res.status(404).json({ error: "Not found" }); return; }
+
+  const guidePrompt = `You are a friendly coloring guide for children. This coloring page has a "${page.genre}" theme for a ${page.gender} child (age group ${page.ageGroup}). Provide exactly 5 simple step-by-step coloring instructions. Each line must start with "Step N: Color the [part] [color]." Keep language simple and fun for children. Only output the 5 steps, nothing else.`;
+
+  const steps: string[] = [];
+  try {
+    const OpenAI = (await import("openai")).default;
+    const client = new OpenAI({
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+    });
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: guidePrompt }],
+      max_tokens: 300,
+    });
+    const text = completion.choices[0]?.message?.content ?? "";
+    steps.push(...text.split("\n").filter((l) => l.trim().length > 0).slice(0, 5));
+  } catch {
+    steps.push(
+      "Step 1: Color the sky light blue",
+      "Step 2: Color the ground green or brown",
+      "Step 3: Color the main character with your favorite color",
+      "Step 4: Add details to the background",
+      "Step 5: Color any remaining areas creatively!"
+    );
+  }
+  res.json({ id, steps });
+});
+
 router.get("/coloring/stats", async (_req, res): Promise<void> => {
   const totalResult = await db
     .select({ count: sql<number>`count(*)::int` })

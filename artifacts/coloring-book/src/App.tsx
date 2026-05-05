@@ -6,6 +6,10 @@ import { Layout } from "@/components/layout";
 import { Home } from "@/pages/home";
 import { History } from "@/pages/history";
 import { Stats } from "@/pages/stats";
+import { Profiles } from "@/pages/profiles";
+import { Story } from "@/pages/story";
+import { Daily } from "@/pages/daily";
+import { Dashboard } from "@/pages/dashboard";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -17,6 +21,10 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/history" component={History} />
         <Route path="/stats" component={Stats} />
+        <Route path="/profiles" component={Profiles} />
+        <Route path="/story" component={Story} />
+        <Route path="/daily" component={Daily} />
+        <Route path="/dashboard" component={Dashboard} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

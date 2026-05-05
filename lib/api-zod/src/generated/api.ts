@@ -8,7 +8,6 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -16,17 +15,14 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
- * Generate a black-and-white coloring page using AI
  * @summary Generate a coloring page
  */
 export const GenerateColoringPageBody = zod.object({
   gender: zod.enum(["Boy", "Girl", "Neutral"]),
   genre: zod.string(),
   ageGroup: zod.enum(["3-5", "6-8", "9+"]),
-  description: zod
-    .string()
-    .nullish()
-    .describe("Optional custom description of what to draw"),
+  description: zod.string().nullish(),
+  profileId: zod.number().nullish(),
 });
 
 export const GenerateColoringPageResponse = zod.object({
@@ -35,22 +31,19 @@ export const GenerateColoringPageResponse = zod.object({
   genre: zod.string(),
   ageGroup: zod.string(),
   description: zod.string().nullish(),
-  imageData: zod.string().describe("Base64-encoded B&W image data"),
-  coloredImageData: zod
-    .string()
-    .nullish()
-    .describe("Base64-encoded colored reference image data"),
+  imageData: zod.string(),
+  coloredImageData: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 
 /**
- * Returns a list of previously generated coloring pages
  * @summary Get generation history
  */
 export const getColoringHistoryQueryLimitDefault = 20;
 
 export const GetColoringHistoryQueryParams = zod.object({
   limit: zod.coerce.number().default(getColoringHistoryQueryLimitDefault),
+  profileId: zod.coerce.number().optional(),
 });
 
 export const GetColoringHistoryResponseItem = zod.object({
@@ -59,11 +52,8 @@ export const GetColoringHistoryResponseItem = zod.object({
   genre: zod.string(),
   ageGroup: zod.string(),
   description: zod.string().nullish(),
-  imageData: zod.string().describe("Base64-encoded B&W image data"),
-  coloredImageData: zod
-    .string()
-    .nullish()
-    .describe("Base64-encoded colored reference image data"),
+  imageData: zod.string(),
+  coloredImageData: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const GetColoringHistoryResponse = zod.array(
@@ -71,7 +61,6 @@ export const GetColoringHistoryResponse = zod.array(
 );
 
 /**
- * Deletes a coloring page from history
  * @summary Delete a history item
  */
 export const DeleteColoringHistoryParams = zod.object({
@@ -79,7 +68,6 @@ export const DeleteColoringHistoryParams = zod.object({
 });
 
 /**
- * Returns stats about generated pages (totals by genre and gender)
  * @summary Get coloring stats
  */
 export const GetColoringStatsResponse = zod.object({
@@ -96,4 +84,123 @@ export const GetColoringStatsResponse = zod.object({
       count: zod.number(),
     }),
   ),
+});
+
+/**
+ * @summary Get step-by-step color guide for a page
+ */
+export const GetColorGuideParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetColorGuideResponse = zod.object({
+  id: zod.number(),
+  steps: zod.array(zod.string()),
+});
+
+/**
+ * @summary Get all child profiles
+ */
+export const GetProfilesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  ageGroup: zod.string(),
+  avatarEmoji: zod.string(),
+  totalPages: zod.number(),
+  totalMinutes: zod.number(),
+  currentDifficulty: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+export const GetProfilesResponse = zod.array(GetProfilesResponseItem);
+
+/**
+ * @summary Create a child profile
+ */
+export const CreateProfileBody = zod.object({
+  name: zod.string(),
+  ageGroup: zod.enum(["3-5", "6-8", "9+"]),
+  avatarEmoji: zod.string(),
+});
+
+/**
+ * @summary Delete a child profile
+ */
+export const DeleteProfileParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get badges for a profile
+ */
+export const GetProfileBadgesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetProfileBadgesResponseItem = zod.string();
+export const GetProfileBadgesResponse = zod.array(GetProfileBadgesResponseItem);
+
+/**
+ * @summary Generate a multi-page story
+ */
+export const generateStoryBodyPageCountMin = 3;
+export const generateStoryBodyPageCountMax = 5;
+
+export const GenerateStoryBody = zod.object({
+  genre: zod.string(),
+  ageGroup: zod.enum(["3-5", "6-8", "9+"]),
+  gender: zod.enum(["Boy", "Girl", "Neutral"]),
+  pageCount: zod
+    .number()
+    .min(generateStoryBodyPageCountMin)
+    .max(generateStoryBodyPageCountMax),
+  profileId: zod.number().nullish(),
+});
+
+export const GenerateStoryResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  theme: zod.string(),
+  genre: zod.string(),
+  totalPages: zod.number(),
+  pages: zod.array(
+    zod.object({
+      id: zod.number(),
+      pageNumber: zod.number(),
+      sentence: zod.string(),
+      imageData: zod.string(),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Get all stories
+ */
+export const GetStoriesResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  theme: zod.string(),
+  genre: zod.string(),
+  totalPages: zod.number(),
+  pages: zod.array(
+    zod.object({
+      id: zod.number(),
+      pageNumber: zod.number(),
+      sentence: zod.string(),
+      imageData: zod.string(),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+});
+export const GetStoriesResponse = zod.array(GetStoriesResponseItem);
+
+/**
+ * @summary Get today's daily challenge
+ */
+export const GetDailyChallengeResponse = zod.object({
+  id: zod.number(),
+  challengeDate: zod.string(),
+  genre: zod.string(),
+  theme: zod.string(),
+  imageData: zod.string().nullish(),
 });

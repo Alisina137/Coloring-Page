@@ -17,12 +17,18 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ChildProfile,
+  ColorGuideResponse,
   ColoringStats,
+  CreateProfileBody,
+  DailyChallengeResponse,
   ErrorResponse,
   GenerateColoringPageBody,
+  GenerateStoryBody,
   GeneratedImage,
   GetColoringHistoryParams,
   HealthStatus,
+  StoryResponse,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -35,7 +41,6 @@ type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const getHealthCheckUrl = () => {
@@ -111,7 +116,6 @@ export function useHealthCheck<
 }
 
 /**
- * Generate a black-and-white coloring page using AI
  * @summary Generate a coloring page
  */
 export const getGenerateColoringPageUrl = () => {
@@ -199,7 +203,6 @@ export const useGenerateColoringPage = <
 };
 
 /**
- * Returns a list of previously generated coloring pages
  * @summary Get generation history
  */
 export const getGetColoringHistoryUrl = (params?: GetColoringHistoryParams) => {
@@ -297,7 +300,6 @@ export function useGetColoringHistory<
 }
 
 /**
- * Deletes a coloring page from history
  * @summary Delete a history item
  */
 export const getDeleteColoringHistoryUrl = (id: number) => {
@@ -382,7 +384,6 @@ export const useDeleteColoringHistory = <
 };
 
 /**
- * Returns stats about generated pages (totals by genre and gender)
  * @summary Get coloring stats
  */
 export const getGetColoringStatsUrl = () => {
@@ -449,6 +450,661 @@ export function useGetColoringStats<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetColoringStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get step-by-step color guide for a page
+ */
+export const getGetColorGuideUrl = (id: number) => {
+  return `/api/coloring/color-guide/${id}`;
+};
+
+export const getColorGuide = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ColorGuideResponse> => {
+  return customFetch<ColorGuideResponse>(getGetColorGuideUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetColorGuideQueryKey = (id: number) => {
+  return [`/api/coloring/color-guide/${id}`] as const;
+};
+
+export const getGetColorGuideQueryOptions = <
+  TData = Awaited<ReturnType<typeof getColorGuide>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getColorGuide>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetColorGuideQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getColorGuide>>> = ({
+    signal,
+  }) => getColorGuide(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getColorGuide>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetColorGuideQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getColorGuide>>
+>;
+export type GetColorGuideQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get step-by-step color guide for a page
+ */
+
+export function useGetColorGuide<
+  TData = Awaited<ReturnType<typeof getColorGuide>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getColorGuide>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetColorGuideQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get all child profiles
+ */
+export const getGetProfilesUrl = () => {
+  return `/api/profiles`;
+};
+
+export const getProfiles = async (
+  options?: RequestInit,
+): Promise<ChildProfile[]> => {
+  return customFetch<ChildProfile[]>(getGetProfilesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetProfilesQueryKey = () => {
+  return [`/api/profiles`] as const;
+};
+
+export const getGetProfilesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getProfiles>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getProfiles>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetProfilesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfiles>>> = ({
+    signal,
+  }) => getProfiles({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getProfiles>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetProfilesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getProfiles>>
+>;
+export type GetProfilesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all child profiles
+ */
+
+export function useGetProfiles<
+  TData = Awaited<ReturnType<typeof getProfiles>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getProfiles>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetProfilesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a child profile
+ */
+export const getCreateProfileUrl = () => {
+  return `/api/profiles`;
+};
+
+export const createProfile = async (
+  createProfileBody: CreateProfileBody,
+  options?: RequestInit,
+): Promise<ChildProfile> => {
+  return customFetch<ChildProfile>(getCreateProfileUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createProfileBody),
+  });
+};
+
+export const getCreateProfileMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createProfile>>,
+    TError,
+    { data: BodyType<CreateProfileBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createProfile>>,
+  TError,
+  { data: BodyType<CreateProfileBody> },
+  TContext
+> => {
+  const mutationKey = ["createProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createProfile>>,
+    { data: BodyType<CreateProfileBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createProfile(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createProfile>>
+>;
+export type CreateProfileMutationBody = BodyType<CreateProfileBody>;
+export type CreateProfileMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a child profile
+ */
+export const useCreateProfile = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createProfile>>,
+    TError,
+    { data: BodyType<CreateProfileBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createProfile>>,
+  TError,
+  { data: BodyType<CreateProfileBody> },
+  TContext
+> => {
+  return useMutation(getCreateProfileMutationOptions(options));
+};
+
+/**
+ * @summary Delete a child profile
+ */
+export const getDeleteProfileUrl = (id: number) => {
+  return `/api/profiles/${id}`;
+};
+
+export const deleteProfile = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteProfileUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteProfileMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteProfile>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteProfile>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteProfile>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteProfile(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteProfile>>
+>;
+
+export type DeleteProfileMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete a child profile
+ */
+export const useDeleteProfile = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteProfile>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteProfile>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteProfileMutationOptions(options));
+};
+
+/**
+ * @summary Get badges for a profile
+ */
+export const getGetProfileBadgesUrl = (id: number) => {
+  return `/api/profiles/${id}/badges`;
+};
+
+export const getProfileBadges = async (
+  id: number,
+  options?: RequestInit,
+): Promise<string[]> => {
+  return customFetch<string[]>(getGetProfileBadgesUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetProfileBadgesQueryKey = (id: number) => {
+  return [`/api/profiles/${id}/badges`] as const;
+};
+
+export const getGetProfileBadgesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getProfileBadges>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProfileBadges>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetProfileBadgesQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getProfileBadges>>
+  > = ({ signal }) => getProfileBadges(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getProfileBadges>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetProfileBadgesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getProfileBadges>>
+>;
+export type GetProfileBadgesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get badges for a profile
+ */
+
+export function useGetProfileBadges<
+  TData = Awaited<ReturnType<typeof getProfileBadges>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProfileBadges>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetProfileBadgesQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Generate a multi-page story
+ */
+export const getGenerateStoryUrl = () => {
+  return `/api/stories/generate`;
+};
+
+export const generateStory = async (
+  generateStoryBody: GenerateStoryBody,
+  options?: RequestInit,
+): Promise<StoryResponse> => {
+  return customFetch<StoryResponse>(getGenerateStoryUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(generateStoryBody),
+  });
+};
+
+export const getGenerateStoryMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateStory>>,
+    TError,
+    { data: BodyType<GenerateStoryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateStory>>,
+  TError,
+  { data: BodyType<GenerateStoryBody> },
+  TContext
+> => {
+  const mutationKey = ["generateStory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateStory>>,
+    { data: BodyType<GenerateStoryBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateStory(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateStoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateStory>>
+>;
+export type GenerateStoryMutationBody = BodyType<GenerateStoryBody>;
+export type GenerateStoryMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Generate a multi-page story
+ */
+export const useGenerateStory = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateStory>>,
+    TError,
+    { data: BodyType<GenerateStoryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateStory>>,
+  TError,
+  { data: BodyType<GenerateStoryBody> },
+  TContext
+> => {
+  return useMutation(getGenerateStoryMutationOptions(options));
+};
+
+/**
+ * @summary Get all stories
+ */
+export const getGetStoriesUrl = () => {
+  return `/api/stories`;
+};
+
+export const getStories = async (
+  options?: RequestInit,
+): Promise<StoryResponse[]> => {
+  return customFetch<StoryResponse[]>(getGetStoriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStoriesQueryKey = () => {
+  return [`/api/stories`] as const;
+};
+
+export const getGetStoriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getStories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStoriesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStories>>> = ({
+    signal,
+  }) => getStories({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStories>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStoriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStories>>
+>;
+export type GetStoriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all stories
+ */
+
+export function useGetStories<
+  TData = Awaited<ReturnType<typeof getStories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getStories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get today's daily challenge
+ */
+export const getGetDailyChallengeUrl = () => {
+  return `/api/daily/challenge`;
+};
+
+export const getDailyChallenge = async (
+  options?: RequestInit,
+): Promise<DailyChallengeResponse> => {
+  return customFetch<DailyChallengeResponse>(getGetDailyChallengeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetDailyChallengeQueryKey = () => {
+  return [`/api/daily/challenge`] as const;
+};
+
+export const getGetDailyChallengeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDailyChallenge>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDailyChallenge>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetDailyChallengeQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDailyChallenge>>
+  > = ({ signal }) => getDailyChallenge({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDailyChallenge>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDailyChallengeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDailyChallenge>>
+>;
+export type GetDailyChallengeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get today's daily challenge
+ */
+
+export function useGetDailyChallenge<
+  TData = Awaited<ReturnType<typeof getDailyChallenge>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getDailyChallenge>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDailyChallengeQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

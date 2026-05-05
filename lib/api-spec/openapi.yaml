@@ -9,16 +9,16 @@ servers:
     description: Base API path
 tags:
   - name: health
-    description: Health operations
   - name: coloring
-    description: AI coloring page generation
+  - name: profiles
+  - name: stories
+  - name: daily
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -32,7 +32,6 @@ paths:
       operationId: generateColoringPage
       tags: [coloring]
       summary: Generate a coloring page
-      description: Generate a black-and-white coloring page using AI
       requestBody:
         required: true
         content:
@@ -64,7 +63,6 @@ paths:
       operationId: getColoringHistory
       tags: [coloring]
       summary: Get generation history
-      description: Returns a list of previously generated coloring pages
       parameters:
         - name: limit
           in: query
@@ -72,6 +70,11 @@ paths:
           schema:
             type: integer
             default: 20
+        - name: profileId
+          in: query
+          required: false
+          schema:
+            type: integer
       responses:
         "200":
           description: List of generated images
@@ -87,7 +90,6 @@ paths:
       operationId: deleteColoringHistory
       tags: [coloring]
       summary: Delete a history item
-      description: Deletes a coloring page from history
       parameters:
         - name: id
           in: path
@@ -109,7 +111,6 @@ paths:
       operationId: getColoringStats
       tags: [coloring]
       summary: Get coloring stats
-      description: Returns stats about generated pages (totals by genre and gender)
       responses:
         "200":
           description: Stats summary
@@ -117,6 +118,158 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ColoringStats"
+
+  /coloring/color-guide/{id}:
+    get:
+      operationId: getColorGuide
+      tags: [coloring]
+      summary: Get step-by-step color guide for a page
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Color guide steps
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ColorGuideResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /profiles:
+    get:
+      operationId: getProfiles
+      tags: [profiles]
+      summary: Get all child profiles
+      responses:
+        "200":
+          description: List of profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChildProfile"
+    post:
+      operationId: createProfile
+      tags: [profiles]
+      summary: Create a child profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProfileBody"
+      responses:
+        "201":
+          description: Created profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChildProfile"
+
+  /profiles/{id}:
+    delete:
+      operationId: deleteProfile
+      tags: [profiles]
+      summary: Delete a child profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /profiles/{id}/badges:
+    get:
+      operationId: getProfileBadges
+      tags: [profiles]
+      summary: Get badges for a profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of badge keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /stories/generate:
+    post:
+      operationId: generateStory
+      tags: [stories]
+      summary: Generate a multi-page story
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateStoryBody"
+      responses:
+        "200":
+          description: Generated story with pages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoryResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stories:
+    get:
+      operationId: getStories
+      tags: [stories]
+      summary: Get all stories
+      responses:
+        "200":
+          description: List of stories with pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StoryResponse"
+
+  /daily/challenge:
+    get:
+      operationId: getDailyChallenge
+      tags: [daily]
+      summary: Get today's daily challenge
+      responses:
+        "200":
+          description: Today's challenge
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyChallengeResponse"
 
 components:
   schemas:
@@ -141,7 +294,8 @@ components:
           enum: ["3-5", "6-8", "9+"]
         description:
           type: ["string", "null"]
-          description: Optional custom description of what to draw
+        profileId:
+          type: ["integer", "null"]
       required:
         - gender
         - genre
@@ -162,10 +316,8 @@ components:
           type: ["string", "null"]
         imageData:
           type: string
-          description: Base64-encoded B&W image data
         coloredImageData:
           type: ["string", "null"]
-          description: Base64-encoded colored reference image data
         createdAt:
           type: string
           format: date-time
@@ -176,6 +328,19 @@ components:
         - ageGroup
         - imageData
         - createdAt
+
+    ColorGuideResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        steps:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - steps
 
     ColoringStats:
       type: object
@@ -205,6 +370,139 @@ components:
       required:
         - label
         - count
+
+    ChildProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        ageGroup:
+          type: string
+        avatarEmoji:
+          type: string
+        totalPages:
+          type: integer
+        totalMinutes:
+          type: integer
+        currentDifficulty:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - ageGroup
+        - avatarEmoji
+        - totalPages
+        - totalMinutes
+        - currentDifficulty
+        - createdAt
+
+    CreateProfileBody:
+      type: object
+      properties:
+        name:
+          type: string
+        ageGroup:
+          type: string
+          enum: ["3-5", "6-8", "9+"]
+        avatarEmoji:
+          type: string
+      required:
+        - name
+        - ageGroup
+        - avatarEmoji
+
+    GenerateStoryBody:
+      type: object
+      properties:
+        genre:
+          type: string
+        ageGroup:
+          type: string
+          enum: ["3-5", "6-8", "9+"]
+        gender:
+          type: string
+          enum: [Boy, Girl, Neutral]
+        pageCount:
+          type: integer
+          minimum: 3
+          maximum: 5
+        profileId:
+          type: ["integer", "null"]
+      required:
+        - genre
+        - ageGroup
+        - gender
+        - pageCount
+
+    StoryPage:
+      type: object
+      properties:
+        id:
+          type: integer
+        pageNumber:
+          type: integer
+        sentence:
+          type: string
+        imageData:
+          type: string
+      required:
+        - id
+        - pageNumber
+        - sentence
+        - imageData
+
+    StoryResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        theme:
+          type: string
+        genre:
+          type: string
+        totalPages:
+          type: integer
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/StoryPage"
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - theme
+        - genre
+        - totalPages
+        - pages
+        - createdAt
+
+    DailyChallengeResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        challengeDate:
+          type: string
+        genre:
+          type: string
+        theme:
+          type: string
+        imageData:
+          type: ["string", "null"]
+      required:
+        - id
+        - challengeDate
+        - genre
+        - theme
 
     ErrorResponse:
       type: object
