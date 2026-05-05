@@ -9,6 +9,7 @@ export const coloringPagesTable = pgTable("coloring_pages", {
   ageGroup: text("age_group").notNull().default("6-8"),
   description: text("description"),
   imageData: text("image_data").notNull(),
+  coloredImageData: text("colored_image_data"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

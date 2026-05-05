@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useGenerateColoringPage, getGetColoringHistoryQueryKey, getGetColoringStatsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, Download, Wand2, RefreshCcw, Palette, Eye } from "lucide-react";
+import { Loader2, Download, Wand2, RefreshCcw, Palette } from "lucide-react";
 
 const GENRES = [
   "Animals", "Fantasy", "Cars & Vehicles", "Sports", "Nature & Landscapes",
@@ -16,41 +16,55 @@ const GENRES = [
   "Food & Sweets", "Transportation", "Cute Cartoon Characters", "Daily Life Scenes"
 ];
 
-function useColorizedCanvas(imageData: string | null) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+function ImageCard({
+  title,
+  subtitle,
+  src,
+  filename,
+  badge,
+  badgeColor,
+}: {
+  title: string;
+  subtitle: string;
+  src: string;
+  filename: string;
+  badge: string;
+  badgeColor: string;
+}) {
+  const handleDownload = () => {
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = filename;
+    a.click();
+  };
 
-  useEffect(() => {
-    if (!imageData || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const img = new Image();
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-      const imageDataObj = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageDataObj.data;
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const brightness = (r + g + b) / 3;
-        if (brightness > 200) {
-          data[i] = 255; data[i + 1] = 255; data[i + 2] = 255;
-        } else {
-          const t = 1 - brightness / 255;
-          data[i] = Math.round(30 + t * 20);
-          data[i + 1] = Math.round(80 + t * 60);
-          data[i + 2] = Math.round(200 + t * 55);
-        }
-      }
-      ctx.putImageData(imageDataObj, 0, 0);
-    };
-    img.src = `data:image/png;base64,${imageData}`;
-  }, [imageData]);
-
-  return canvasRef;
+  return (
+    <div className="flex flex-col gap-3 bg-card rounded-2xl border-2 border-border p-4 shadow-md animate-in zoom-in-95 duration-500">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-display font-bold text-base text-foreground">{title}</p>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badgeColor}`}>{badge}</span>
+      </div>
+      <div className="relative overflow-hidden rounded-xl bg-white border border-border">
+        <img
+          src={src}
+          alt={title}
+          className="w-full object-contain"
+        />
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        className="w-full rounded-xl font-semibold border-2"
+        onClick={handleDownload}
+      >
+        <Download className="mr-2 h-4 w-4" />
+        Download {title}
+      </Button>
+    </div>
+  );
 }
 
 export function Home() {
@@ -58,17 +72,18 @@ export function Home() {
   const [ageGroup, setAgeGroup] = useState<"3-5" | "6-8" | "9+">("6-8");
   const [genre, setGenre] = useState<string>("Animals");
   const [description, setDescription] = useState("");
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [showColored, setShowColored] = useState(false);
+  const [result, setResult] = useState<{ bw: string; colored: string | null; genre: string } | null>(null);
 
-  const canvasRef = useColorizedCanvas(generatedImage);
   const queryClient = useQueryClient();
 
   const generateMutation = useGenerateColoringPage({
     mutation: {
       onSuccess: (data) => {
-        setGeneratedImage(data.imageData);
-        setShowColored(false);
+        setResult({
+          bw: `data:image/png;base64,${data.imageData}`,
+          colored: data.coloredImageData ? `data:image/png;base64,${data.coloredImageData}` : null,
+          genre: data.genre,
+        });
         queryClient.invalidateQueries({ queryKey: getGetColoringHistoryQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetColoringStatsQueryKey() });
       }
@@ -86,20 +101,7 @@ export function Home() {
     });
   };
 
-  const handleDownload = useCallback(() => {
-    if (!generatedImage) return;
-    if (showColored && canvasRef.current) {
-      const a = document.createElement("a");
-      a.href = canvasRef.current.toDataURL("image/png");
-      a.download = `coloring-page-${genre.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-colored.png`;
-      a.click();
-    } else {
-      const a = document.createElement("a");
-      a.href = `data:image/png;base64,${generatedImage}`;
-      a.download = `coloring-page-${genre.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`;
-      a.click();
-    }
-  }, [generatedImage, showColored, canvasRef, genre]);
+  const slug = result?.genre.toLowerCase().replace(/[^a-z0-9]+/g, "-") ?? "page";
 
   return (
     <div className="max-w-3xl mx-auto w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -168,7 +170,8 @@ export function Home() {
 
         <div className="space-y-2">
           <Label className="text-base font-display font-semibold text-accent">
-            Describe it yourself <span className="text-muted-foreground font-normal text-sm">(optional)</span>
+            Describe it yourself{" "}
+            <span className="text-muted-foreground font-normal text-sm">(optional)</span>
           </Label>
           <Textarea
             value={description}
@@ -194,69 +197,61 @@ export function Home() {
         </Button>
       </div>
 
-      <div className="bg-card rounded-3xl border-2 border-border border-dashed overflow-hidden min-h-[420px] flex items-center justify-center relative shadow-inner">
-        {generateMutation.isPending ? (
-          <div className="flex flex-col items-center text-muted-foreground animate-pulse py-16">
-            <div className="w-24 h-24 mb-4 relative">
-              <div className="absolute inset-0 border-4 border-primary rounded-full animate-[spin_3s_linear_infinite] border-t-transparent" />
-              <div className="absolute inset-2 border-4 border-secondary rounded-full animate-[spin_2s_linear_infinite_reverse] border-b-transparent" />
-              <div className="absolute inset-4 border-4 border-accent rounded-full animate-[spin_1.5s_linear_infinite] border-l-transparent" />
-            </div>
-            <p className="font-display text-xl text-primary font-medium">Sharpening crayons...</p>
+      {generateMutation.isPending && (
+        <div className="bg-card rounded-3xl border-2 border-border border-dashed min-h-[260px] flex flex-col items-center justify-center gap-4 shadow-inner animate-pulse">
+          <div className="w-20 h-20 relative">
+            <div className="absolute inset-0 border-4 border-primary rounded-full animate-[spin_3s_linear_infinite] border-t-transparent" />
+            <div className="absolute inset-2 border-4 border-secondary rounded-full animate-[spin_2s_linear_infinite_reverse] border-b-transparent" />
+            <div className="absolute inset-4 border-4 border-accent rounded-full animate-[spin_1.5s_linear_infinite] border-l-transparent" />
           </div>
-        ) : generatedImage ? (
-          <div className="w-full p-4 animate-in zoom-in-95 duration-500 flex flex-col items-center gap-4">
-            <div className="relative group cursor-pointer select-none" onClick={() => setShowColored((v) => !v)} title="Click to toggle colored preview">
-              <img
-                src={`data:image/png;base64,${generatedImage}`}
-                alt="Generated coloring page"
-                className="max-h-[560px] w-auto object-contain rounded-xl shadow-md bg-white border border-border transition-opacity duration-300"
-                style={{ opacity: showColored ? 0 : 1, position: showColored ? "absolute" : "relative", pointerEvents: showColored ? "none" : "auto" }}
-                data-testid="img-generated-preview"
-              />
-              <canvas
-                ref={canvasRef}
-                className="max-h-[560px] w-auto object-contain rounded-xl shadow-md border border-blue-300 transition-opacity duration-300"
-                style={{
-                  opacity: showColored ? 1 : 0,
-                  position: showColored ? "relative" : "absolute",
-                  maxWidth: "100%",
-                }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <div className="bg-black/50 text-white text-sm font-semibold px-4 py-2 rounded-full flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  {showColored ? "Click to see B&W" : "Click to see colored"}
-                </div>
-              </div>
-            </div>
+          <p className="font-display text-xl text-primary font-medium">Creating both versions…</p>
+          <p className="text-sm text-muted-foreground">This takes about 30–60 seconds</p>
+        </div>
+      )}
 
-            <div className="text-xs text-muted-foreground text-center">
-              {showColored
-                ? "🎨 Colored preview — click the image to switch back to B&W"
-                : "⬛ Black & white — click the image to see the colored version"}
-            </div>
+      {!generateMutation.isPending && result && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="font-display font-bold text-lg text-foreground">Your pages are ready!</p>
+            <Button size="sm" variant="ghost" onClick={handleGenerate} data-testid="button-regenerate">
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Try Again
+            </Button>
+          </div>
 
-            <div className="flex flex-wrap gap-3 justify-center animate-in slide-in-from-bottom-4">
-              <Button size="lg" variant="outline" className="h-12 px-6 rounded-xl font-semibold border-2" onClick={handleGenerate} data-testid="button-regenerate">
-                <RefreshCcw className="mr-2 h-5 w-5" />
-                Try Another
-              </Button>
-              <Button size="lg" className="h-12 px-6 rounded-xl font-bold bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg" onClick={handleDownload} data-testid="button-download">
-                <Download className="mr-2 h-5 w-5" />
-                Download {showColored ? "Colored" : "B&W"}
-              </Button>
-            </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <ImageCard
+              title="Coloring Page"
+              subtitle="Print this and color it in"
+              src={result.bw}
+              filename={`coloring-page-${slug}.png`}
+              badge="B&W"
+              badgeColor="bg-gray-100 text-gray-700"
+            />
+            {result.colored && (
+              <ImageCard
+                title="Color Reference"
+                subtitle="Use this as your guide"
+                src={result.colored}
+                filename={`coloring-reference-${slug}.png`}
+                badge="Colored"
+                badgeColor="bg-green-100 text-green-700"
+              />
+            )}
           </div>
-        ) : (
-          <div className="text-center p-8 space-y-4 opacity-50">
-            <div className="w-32 h-32 mx-auto bg-muted rounded-full flex items-center justify-center">
-              <Palette className="h-12 w-12 text-muted-foreground" />
+        </div>
+      )}
+
+      {!generateMutation.isPending && !result && (
+        <div className="bg-card rounded-3xl border-2 border-border border-dashed min-h-[200px] flex items-center justify-center shadow-inner">
+          <div className="text-center p-8 space-y-3 opacity-50">
+            <div className="w-24 h-24 mx-auto bg-muted rounded-full flex items-center justify-center">
+              <Palette className="h-10 w-10 text-muted-foreground" />
             </div>
-            <p className="text-lg font-medium text-muted-foreground">Your masterpiece will appear here!</p>
+            <p className="text-base font-medium text-muted-foreground">Your pages will appear here!</p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

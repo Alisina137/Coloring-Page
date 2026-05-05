@@ -45,8 +45,13 @@ export interface GeneratedImage {
   ageGroup: string;
   /** @nullable */
   description?: string | null;
-  /** Base64-encoded image data */
+  /** Base64-encoded B&W image data */
   imageData: string;
+  /**
+   * Base64-encoded colored reference image data
+   * @nullable
+   */
+  coloredImageData?: string | null;
   createdAt: string;
 }
 

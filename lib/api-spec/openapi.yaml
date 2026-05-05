@@ -162,7 +162,10 @@ components:
           type: ["string", "null"]
         imageData:
           type: string
-          description: Base64-encoded image data
+          description: Base64-encoded B&W image data
+        coloredImageData:
+          type: ["string", "null"]
+          description: Base64-encoded colored reference image data
         createdAt:
           type: string
           format: date-time

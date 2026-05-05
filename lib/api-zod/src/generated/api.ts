@@ -35,7 +35,11 @@ export const GenerateColoringPageResponse = zod.object({
   genre: zod.string(),
   ageGroup: zod.string(),
   description: zod.string().nullish(),
-  imageData: zod.string().describe("Base64-encoded image data"),
+  imageData: zod.string().describe("Base64-encoded B&W image data"),
+  coloredImageData: zod
+    .string()
+    .nullish()
+    .describe("Base64-encoded colored reference image data"),
   createdAt: zod.coerce.date(),
 });
 
@@ -55,7 +59,11 @@ export const GetColoringHistoryResponseItem = zod.object({
   genre: zod.string(),
   ageGroup: zod.string(),
   description: zod.string().nullish(),
-  imageData: zod.string().describe("Base64-encoded image data"),
+  imageData: zod.string().describe("Base64-encoded B&W image data"),
+  coloredImageData: zod
+    .string()
+    .nullish()
+    .describe("Base64-encoded colored reference image data"),
   createdAt: zod.coerce.date(),
 });
 export const GetColoringHistoryResponse = zod.array(
