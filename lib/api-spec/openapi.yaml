@@ -139,6 +139,9 @@ components:
         ageGroup:
           type: string
           enum: ["3-5", "6-8", "9+"]
+        description:
+          type: ["string", "null"]
+          description: Optional custom description of what to draw
       required:
         - gender
         - genre
@@ -155,6 +158,8 @@ components:
           type: string
         ageGroup:
           type: string
+        description:
+          type: ["string", "null"]
         imageData:
           type: string
           description: Base64-encoded image data

@@ -31,6 +31,11 @@ export interface GenerateColoringPageBody {
   gender: GenerateColoringPageBodyGender;
   genre: string;
   ageGroup: GenerateColoringPageBodyAgeGroup;
+  /**
+   * Optional custom description of what to draw
+   * @nullable
+   */
+  description?: string | null;
 }
 
 export interface GeneratedImage {
@@ -38,6 +43,8 @@ export interface GeneratedImage {
   gender: string;
   genre: string;
   ageGroup: string;
+  /** @nullable */
+  description?: string | null;
   /** Base64-encoded image data */
   imageData: string;
   createdAt: string;

@@ -23,6 +23,10 @@ export const GenerateColoringPageBody = zod.object({
   gender: zod.enum(["Boy", "Girl", "Neutral"]),
   genre: zod.string(),
   ageGroup: zod.enum(["3-5", "6-8", "9+"]),
+  description: zod
+    .string()
+    .nullish()
+    .describe("Optional custom description of what to draw"),
 });
 
 export const GenerateColoringPageResponse = zod.object({
@@ -30,6 +34,7 @@ export const GenerateColoringPageResponse = zod.object({
   gender: zod.string(),
   genre: zod.string(),
   ageGroup: zod.string(),
+  description: zod.string().nullish(),
   imageData: zod.string().describe("Base64-encoded image data"),
   createdAt: zod.coerce.date(),
 });
@@ -49,6 +54,7 @@ export const GetColoringHistoryResponseItem = zod.object({
   gender: zod.string(),
   genre: zod.string(),
   ageGroup: zod.string(),
+  description: zod.string().nullish(),
   imageData: zod.string().describe("Base64-encoded image data"),
   createdAt: zod.coerce.date(),
 });
