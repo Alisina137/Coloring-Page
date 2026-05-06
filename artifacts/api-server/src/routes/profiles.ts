@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { db, childProfilesTable, earnedBadgesTable } from "@workspace/db";
 import {
   CreateProfileBody,
+  UpdateProfileBody,
+  UpdateProfileParams,
   DeleteProfileParams,
   GetProfileBadgesParams,
 } from "@workspace/api-zod";
@@ -45,6 +47,33 @@ router.post("/profiles", async (req, res): Promise<void> => {
   const { name, ageGroup, avatarEmoji } = parsed.data;
   const [profile] = await db.insert(childProfilesTable).values({ name, ageGroup, avatarEmoji }).returning();
   res.status(201).json(profile);
+});
+
+router.patch("/profiles/:id", async (req, res): Promise<void> => {
+  const params = UpdateProfileParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const body = UpdateProfileBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const updates: Partial<{ name: string; ageGroup: string; avatarEmoji: string }> = {};
+  if (body.data.name !== undefined) updates.name = body.data.name;
+  if (body.data.ageGroup !== undefined) updates.ageGroup = body.data.ageGroup;
+  if (body.data.avatarEmoji !== undefined) updates.avatarEmoji = body.data.avatarEmoji;
+  const [updated] = await db
+    .update(childProfilesTable)
+    .set(updates)
+    .where(eq(childProfilesTable.id, params.data.id))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Profile not found" });
+    return;
+  }
+  res.json(updated);
 });
 
 router.delete("/profiles/:id", async (req, res): Promise<void> => {

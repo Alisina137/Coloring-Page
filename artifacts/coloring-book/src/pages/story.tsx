@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, BookOpen, Download, Wand2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, BookOpen, Download, Wand2, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import jsPDF from "jspdf";
 
 const GENRES = [
@@ -171,6 +171,20 @@ export function Story() {
           <p className="text-center text-sm text-muted-foreground">This may take 1–2 minutes for all pages…</p>
         )}
       </div>
+
+      {generateMutation.isError && !generateMutation.isPending && (
+        <div className="bg-destructive/10 rounded-2xl border-2 border-destructive/30 p-5 flex items-start gap-3">
+          <AlertCircle className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
+          <div>
+            <p className="font-display font-bold text-destructive">Couldn't generate the story</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {(generateMutation.error as any)?.status === 403
+                ? "The AI image service has reached its monthly limit. Please try again later."
+                : "Something went wrong. Please check your connection and try again."}
+            </p>
+          </div>
+        </div>
+      )}
 
       {activeStory && !generateMutation.isPending && (
         <div className="space-y-3">

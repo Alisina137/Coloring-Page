@@ -231,6 +231,21 @@ export function Home() {
         </Button>
       </div>
 
+      {/* Error */}
+      {generateMutation.isError && !generateMutation.isPending && (
+        <div className="bg-destructive/10 rounded-2xl border-2 border-destructive/30 p-5 flex items-start gap-3">
+          <span className="text-2xl">😬</span>
+          <div>
+            <p className="font-display font-bold text-destructive">Couldn't generate the page</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {(generateMutation.error as any)?.message?.includes("403") || (generateMutation.error as any)?.status === 403
+                ? "The AI image service has reached its monthly limit. Please try again later or upgrade the plan."
+                : "Something went wrong. Please check your connection and try again."}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Loading */}
       {generateMutation.isPending && (
         <div className="bg-card rounded-3xl border-2 border-dashed border-border min-h-[240px] flex flex-col items-center justify-center gap-4 shadow-inner animate-pulse">

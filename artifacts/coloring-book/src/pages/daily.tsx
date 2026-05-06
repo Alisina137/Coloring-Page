@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useGetDailyChallenge } from "@workspace/api-client-react";
+import { useGetDailyChallenge, getGetDailyChallengeQueryOptions } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, Sun, Trophy } from "lucide-react";
+import { Download, Loader2, Sun, Trophy, AlertCircle, RefreshCcw } from "lucide-react";
 import jsPDF from "jspdf";
 
 function downloadFromCanvas(src: string, filter: string, filename: string) {
@@ -41,7 +41,10 @@ async function downloadPDF(imageData: string, title: string, theme: string) {
 }
 
 export function Daily() {
-  const { data: challenge, isLoading, error } = useGetDailyChallenge();
+  const baseOptions = getGetDailyChallengeQueryOptions();
+  const { data: challenge, isLoading, error, refetch } = useGetDailyChallenge({
+    query: { ...baseOptions, retry: false },
+  });
   const [showColored, setShowColored] = useState(false);
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
@@ -67,9 +70,20 @@ export function Daily() {
         </div>
       )}
 
-      {error && (
-        <div className="bg-destructive/10 rounded-2xl border border-destructive p-6 text-center text-destructive">
-          Failed to load today's challenge. Please try again.
+      {error && !isLoading && (
+        <div className="bg-destructive/10 rounded-2xl border-2 border-destructive/30 p-6 flex flex-col items-center gap-4 text-center">
+          <AlertCircle className="h-10 w-10 text-destructive" />
+          <div>
+            <p className="font-display font-bold text-destructive text-lg">Couldn't load today's challenge</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {(error as any)?.status === 403
+                ? "The AI image service has reached its monthly limit. Please try again later."
+                : "Something went wrong loading today's challenge."}
+            </p>
+          </div>
+          <Button variant="outline" className="rounded-xl" onClick={() => refetch()}>
+            <RefreshCcw className="mr-2 h-4 w-4" />Try Again
+          </Button>
         </div>
       )}
 

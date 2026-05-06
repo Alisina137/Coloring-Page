@@ -92,6 +92,21 @@ export interface CreateProfileBody {
   avatarEmoji: string;
 }
 
+export type UpdateProfileBodyAgeGroup =
+  (typeof UpdateProfileBodyAgeGroup)[keyof typeof UpdateProfileBodyAgeGroup];
+
+export const UpdateProfileBodyAgeGroup = {
+  "3-5": "3-5",
+  "6-8": "6-8",
+  "9+": "9+",
+} as const;
+
+export interface UpdateProfileBody {
+  name?: string;
+  ageGroup?: UpdateProfileBodyAgeGroup;
+  avatarEmoji?: string;
+}
+
 export type GenerateStoryBodyAgeGroup =
   (typeof GenerateStoryBodyAgeGroup)[keyof typeof GenerateStoryBodyAgeGroup];
 

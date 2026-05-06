@@ -123,6 +123,30 @@ export const CreateProfileBody = zod.object({
 });
 
 /**
+ * @summary Update a child profile
+ */
+export const UpdateProfileParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateProfileBody = zod.object({
+  name: zod.string().optional(),
+  ageGroup: zod.enum(["3-5", "6-8", "9+"]).optional(),
+  avatarEmoji: zod.string().optional(),
+});
+
+export const UpdateProfileResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  ageGroup: zod.string(),
+  avatarEmoji: zod.string(),
+  totalPages: zod.number(),
+  totalMinutes: zod.number(),
+  currentDifficulty: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
  * @summary Delete a child profile
  */
 export const DeleteProfileParams = zod.object({
