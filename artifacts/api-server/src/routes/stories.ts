@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { desc } from "drizzle-orm";
 import { db, storiesTable, storyPagesTable, childProfilesTable } from "@workspace/db";
 import { GenerateStoryBody } from "@workspace/api-zod";
-import { generateImageBuffer } from "@workspace/integrations-openai-ai-server/image";
+import { generateImageBuffer } from "../lib/image-gen";
 import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();

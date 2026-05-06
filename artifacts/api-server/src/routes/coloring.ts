@@ -9,7 +9,7 @@ import {
   GetColoringHistoryResponse,
   GetColoringStatsResponse,
 } from "@workspace/api-zod";
-import { generateImageBuffer } from "@workspace/integrations-openai-ai-server/image";
+import { generateImageBuffer } from "../lib/image-gen";
 
 const router: IRouter = Router();
 
@@ -110,37 +110,44 @@ router.delete("/coloring/history/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
+const COLOR_GUIDES: Record<string, string[]> = {
+  Animals: ["Color the sky light blue", "Color the grass bright green", "Color the main animal with warm fur tones — brown, orange, or tan", "Add yellow and orange to the sunlight areas", "Color any flowers or plants with bright cheerful colors"],
+  Fantasy: ["Color the sky purple and dark blue for a magical feel", "Color magical creatures with vivid colors — gold, silver, or rainbow", "Paint the castle walls light grey and the rooftop purple", "Color any stars or sparkles bright yellow", "Fill the background forest with deep greens and teals"],
+  "Cars & Vehicles": ["Color the sky light blue with white clouds", "Paint the main vehicle a bold red, blue, or yellow", "Color the wheels and tires dark grey or black", "Add orange and yellow for headlights and details", "Color the road grey and add yellow road markings"],
+  Sports: ["Color the sky a bright cheerful blue", "Paint the players' uniforms in your favorite team colors", "Color the ball with its classic colors — white and black for soccer, orange for basketball", "Add green for the grass or court", "Color the crowd and background with fun bright shades"],
+  "Nature & Landscapes": ["Color the sky blue with fluffy white clouds", "Paint the mountains purple and grey", "Color the trees with deep and light green", "Add brown for tree trunks and paths", "Color any flowers red, yellow, orange, or pink"],
+  Dinosaurs: ["Color the sky orange and yellow for a prehistoric sunrise", "Paint the main dinosaur green, with a lighter belly", "Color plants and ferns in dark and bright greens", "Add brown for rocks and the muddy ground", "Use purple and red for any berries or small details"],
+  "Space & Planets": ["Color the background deep black for outer space", "Paint the planets in bold colors — blue, red, orange, or ringed Saturn yellow", "Color the rocket silver and red with yellow flames", "Add tiny white and yellow dots for the stars", "Color the astronaut suit white with gold visor"],
+  "Princess & Fairy Tales": ["Color the sky pink and lavender for a fairy-tale dawn", "Paint the princess dress a beautiful blue, pink, or gold", "Color the castle light purple with glittering windows", "Add green and teal to the magical forest", "Color flowers and hearts in red, pink, and yellow"],
+  Superheroes: ["Color the sky dark blue for an action-packed scene", "Paint the hero's costume in bold primary colors — red, blue, or yellow", "Color the cape a contrasting bold shade", "Add bright yellow or orange for energy blasts and stars", "Color the city buildings grey with yellow glowing windows"],
+  "Farm Life": ["Color the sky a warm morning blue", "Paint the barn bright red with a brown roof", "Color the grass and fields in fresh bright green", "Add brown and white spots to the cows, pink for the pigs", "Color sunflowers yellow with brown centers"],
+  "Ocean & Sea Creatures": ["Color the water in shades of blue and teal", "Paint the fish with vivid tropical colors — orange, yellow, red, and blue", "Color the coral reef pink, orange, and purple", "Add sandy yellow and tan for the ocean floor", "Color any bubbles light blue and white"],
+  "Jungle Adventure": ["Color the sky a warm golden yellow peeking through leaves", "Paint the jungle leaves in many shades of green", "Color the monkey brown with a pink face", "Add bright reds and yellows for tropical flowers", "Color the tree trunks dark brown with green vines"],
+  "Robots & Sci-Fi": ["Color the background dark blue or black for a sci-fi setting", "Paint the robot's body silver and grey", "Add glowing blue, green, or red for the robot's eyes and lights", "Color buttons and panels in bright contrasting colors", "Fill the background with purple and teal for a futuristic glow"],
+  "Holiday Themes": ["Color the background with festive warm reds and golds", "Paint the main decorations green, red, and golden", "Color any snow bright white with light blue shadows", "Add warm yellow and orange to candles and lights", "Color stars and baubles gold, silver, red, and green"],
+  "Myths & Legends": ["Color the sky deep purple and midnight blue", "Paint the legendary creature with dramatic colors — gold, silver, or fire red", "Color ancient stones and ruins in grey and mossy green", "Add golden yellow to magical auras and fire", "Color distant mountains in blue-grey tones"],
+  "School & Education Scenes": ["Color the classroom walls a warm cream or light yellow", "Paint books and backpacks in a rainbow of bright colors", "Color pencils yellow and erasers pink", "Add green to the chalkboard with white writing", "Color the children's clothes in cheerful bright shades"],
+  "Food & Sweets": ["Color the background in warm pastels — pink, lavender, or mint", "Paint cakes and cupcakes in vivid frosting colors — pink, blue, and yellow", "Color fruits in their natural vivid shades — red apple, orange carrot, yellow banana", "Add swirls of white for cream and frosting", "Color sprinkles with every color of the rainbow"],
+  Transportation: ["Color the sky light blue with fluffy clouds", "Paint each vehicle in a bold primary color", "Color roads and tracks dark grey with yellow markings", "Add orange and yellow for lights and signals", "Color smoke or steam light grey and white"],
+  "Cute Cartoon Characters": ["Color the background in a pastel or cheerful shade", "Paint the character's body in their signature bright color", "Add rosy pink circles to their cheeks", "Color eyes black with tiny white highlights", "Fill in accessories and details with fun contrasting colors"],
+  "Daily Life Scenes": ["Color the sky a cheerful daytime blue", "Paint houses and buildings in warm, welcoming shades", "Color children's clothing in bright, fun colors", "Add greens for trees and grass", "Color any flowers, signs, or fun details with vivid pops of color"],
+};
+
 router.get("/coloring/color-guide/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
   const [page] = await db.select().from(coloringPagesTable).where(eq(coloringPagesTable.id, id));
   if (!page) { res.status(404).json({ error: "Not found" }); return; }
 
-  const guidePrompt = `You are a friendly coloring guide for children. This coloring page has a "${page.genre}" theme for a ${page.gender} child (age group ${page.ageGroup}). Provide exactly 5 simple step-by-step coloring instructions. Each line must start with "Step N: Color the [part] [color]." Keep language simple and fun for children. Only output the 5 steps, nothing else.`;
+  const guideLines = COLOR_GUIDES[page.genre] ?? [
+    "Color the sky light blue",
+    "Color the ground green or brown",
+    "Color the main character with your favorite color",
+    "Add details to the background",
+    "Color any remaining areas creatively!",
+  ];
 
-  const steps: string[] = [];
-  try {
-    const OpenAI = (await import("openai")).default;
-    const client = new OpenAI({
-      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-    });
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: guidePrompt }],
-      max_tokens: 300,
-    });
-    const text = completion.choices[0]?.message?.content ?? "";
-    steps.push(...text.split("\n").filter((l) => l.trim().length > 0).slice(0, 5));
-  } catch {
-    steps.push(
-      "Step 1: Color the sky light blue",
-      "Step 2: Color the ground green or brown",
-      "Step 3: Color the main character with your favorite color",
-      "Step 4: Add details to the background",
-      "Step 5: Color any remaining areas creatively!"
-    );
-  }
+  const steps = guideLines.map((line, i) => `Step ${i + 1}: ${line}.`);
   res.json({ id, steps });
 });
 
