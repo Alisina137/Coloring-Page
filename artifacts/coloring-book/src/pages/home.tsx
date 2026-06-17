@@ -79,7 +79,7 @@ export function Home() {
   const [genre, setGenre] = useState<string>("Animals");
   const [description, setDescription] = useState("");
   const [profileId, setProfileId] = useState<number | null>(null);
-  const [result, setResult] = useState<{ id: number; src: string; genre: string } | null>(null);
+  const [result, setResult] = useState<{ id: number; src: string; coloredSrc: string | null; genre: string } | null>(null);
   const [showColored, setShowColored] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [newBadge, setNewBadge] = useState<string | null>(null);
@@ -96,7 +96,12 @@ export function Home() {
   const generateMutation = useGenerateColoringPage({
     mutation: {
       onSuccess: (data) => {
-        setResult({ id: data.id, src: `data:image/png;base64,${data.imageData}`, genre: data.genre });
+        setResult({
+          id: data.id,
+          src: `data:image/png;base64,${data.imageData}`,
+          coloredSrc: data.coloredImageData ? `data:image/png;base64,${data.coloredImageData}` : null,
+          genre: data.genre,
+        });
         setShowColored(false);
         setShowGuide(false);
         queryClient.invalidateQueries({ queryKey: getGetColoringHistoryQueryKey() });
@@ -119,8 +124,9 @@ export function Home() {
 
   const handleDownloadColored = useCallback(() => {
     if (!result) return;
+    const src = result.coloredSrc ?? result.src;
     const a = document.createElement("a");
-    a.href = result.src;
+    a.href = src;
     a.download = `coloring-${result.genre.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-colored.png`;
     a.click();
   }, [result]);
@@ -298,11 +304,26 @@ export function Home() {
                   <p className="font-display font-bold text-sm">Color Hint</p>
                   <p className="text-xs text-muted-foreground">Peek at the colors 🎨</p>
                 </div>
-                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-purple-100 text-purple-700">Blurred</span>
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-purple-100 text-purple-700">
+                  {showColored ? "Revealed" : "Blurred"}
+                </span>
               </div>
               <div className="rounded-xl overflow-hidden bg-white border border-border cursor-pointer relative group" onClick={() => setShowColored(v => !v)}>
-                <img src={result.src} alt="Color hint" className="w-full object-contain transition-all duration-300"
-                  style={{ filter: showColored ? "saturate(1.4)" : "blur(10px) saturate(1.4)" }} />
+                {result.coloredSrc ? (
+                  <img
+                    src={result.coloredSrc}
+                    alt="Color hint"
+                    className="w-full object-contain transition-all duration-300"
+                    style={{ filter: showColored ? "none" : "blur(12px)" }}
+                  />
+                ) : (
+                  <img
+                    src={result.src}
+                    alt="Color hint"
+                    className="w-full object-contain transition-all duration-300"
+                    style={{ filter: showColored ? "saturate(2) hue-rotate(10deg) contrast(1.1)" : "blur(10px) saturate(2)" }}
+                  />
+                )}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                   <span className="bg-black/50 text-white text-xs px-3 py-1 rounded-full">
                     {showColored ? "Click to blur" : "Click to reveal!"}

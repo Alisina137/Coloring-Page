@@ -46,6 +46,38 @@ async function runSDXLSimplified(prompt: string): Promise<Buffer> {
   return Buffer.from(arrayBuffer);
 }
 
+export async function generateColoredIllustration(userRequest: string): Promise<Buffer> {
+  try {
+    const blob = await hf.textToImage({
+      model: MODEL,
+      inputs: `colorful children's cartoon illustration, ${userRequest}, bright vivid colors, flat color style, cheerful, detailed, bold outlines`,
+      parameters: {
+        negative_prompt: "black and white, grayscale, monochrome, blurry, dark, scary, photorealistic, sketchy",
+        width: 1024,
+        height: 1024,
+        num_inference_steps: 25,
+        guidance_scale: 7.5,
+      },
+    });
+    const arrayBuffer = await blob.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch {
+    const blob = await hf.textToImage({
+      model: MODEL,
+      inputs: `colorful children's illustration, ${userRequest}, bright colors, cartoon style`,
+      parameters: {
+        negative_prompt: "black and white, grayscale, blurry",
+        width: 1024,
+        height: 1024,
+        num_inference_steps: 20,
+        guidance_scale: 7.5,
+      },
+    });
+    const arrayBuffer = await blob.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+}
+
 export async function generateColoringImage(
   prompt: string,
   negativePrompt: string
