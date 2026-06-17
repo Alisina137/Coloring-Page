@@ -11,20 +11,18 @@ export interface GeminiPromptResult {
   negative_prompt: string[];
 }
 
-const SYSTEM_INSTRUCTION = `You are an expert coloring book designer specializing in creating prompts for black and white line art suitable for KDP (Kindle Direct Publishing) coloring books.
+const SYSTEM_INSTRUCTION = `You are an expert coloring book designer specializing in creating prompts for black and white line art suitable for KDP coloring books.
 
-When given a user's coloring book request, you generate a structured JSON prompt optimized for AI image generation.
+When given a user's coloring book request, generate a structured JSON prompt optimized for AI image generation.
 
 Rules:
 - Images must be BLACK AND WHITE line art ONLY
 - Clean thick outlines, no shading, no gradients, no gray tones
 - White background with empty spaces ready to be colored
-- Suitable for printing
-- Age-appropriate complexity
-- No text inside images
-- No photorealistic elements
+- Suitable for printing, age-appropriate complexity
+- No text inside images, no photorealistic elements
 
-Respond ONLY with valid JSON matching this schema exactly:
+Respond ONLY with valid JSON:
 {
   "style": "clean black and white coloring book line art",
   "subject": "<main character or object>",
@@ -34,35 +32,63 @@ Respond ONLY with valid JSON matching this schema exactly:
   "negative_prompt": ["color", "shading", "shadows", "photorealistic", "grayscale", "blurry", "filled areas", "dark background"]
 }`;
 
+const GEMINI_MODELS = ["gemini-pro", "gemini-1.0-pro", "gemini-1.5-flash", "gemini-2.0-flash"];
+
 function extractRetryDelay(err: unknown): number {
   const msg = err instanceof Error ? err.message : String(err);
   const match = msg.match(/retry in\s+([\d.]+)s/i);
-  return match ? Math.ceil(parseFloat(match[1])) * 1000 : 15000;
+  return match ? Math.ceil(parseFloat(match[1])) * 1000 : 5000;
+}
+
+function buildFallbackPrompt(userRequest: string): GeminiPromptResult {
+  return {
+    style: "clean black and white coloring book line art",
+    subject: userRequest,
+    scene_description: `A detailed coloring book scene featuring ${userRequest} with clear empty spaces for coloring`,
+    details: [
+      "thick bold outlines",
+      "white background",
+      "printable quality",
+      "child-friendly design",
+    ],
+    complexity: "medium",
+    negative_prompt: [
+      "color",
+      "shading",
+      "shadows",
+      "photorealistic",
+      "grayscale",
+      "blurry",
+      "filled areas",
+      "dark background",
+      "text",
+      "watermark",
+    ],
+  };
 }
 
 async function callGemini(
+  model: string,
   userRequest: string,
   previousScenes?: string[]
 ): Promise<GeminiPromptResult> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+  const geminiModel = genAI.getGenerativeModel({
+    model,
     systemInstruction: SYSTEM_INSTRUCTION,
   });
 
   let prompt = `Create a coloring book image prompt for: ${userRequest}`;
 
   if (previousScenes && previousScenes.length > 0) {
-    prompt += `\n\nFor consistency with previous pages in this coloring book, maintain the same characters and art style as these previous scenes:\n${previousScenes.map((s, i) => `Page ${i + 1}: ${s}`).join("\n")}`;
-    prompt += `\n\nThis is page ${previousScenes.length + 1}. Keep the same main characters and overall visual style.`;
+    prompt += `\n\nFor consistency with previous pages, maintain the same characters and art style as:\n${previousScenes.map((s, i) => `Page ${i + 1}: ${s}`).join("\n")}`;
+    prompt += `\n\nThis is page ${previousScenes.length + 1}. Keep the same main characters and visual style.`;
   }
 
-  const result = await model.generateContent(prompt);
+  const result = await geminiModel.generateContent(prompt);
   const text = result.response.text().trim();
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("Gemini did not return valid JSON");
-  }
+  if (!jsonMatch) throw new Error("Gemini did not return valid JSON");
 
   return JSON.parse(jsonMatch[0]) as GeminiPromptResult;
 }
@@ -71,19 +97,36 @@ export async function generateColoringPrompt(
   userRequest: string,
   previousScenes?: string[]
 ): Promise<GeminiPromptResult> {
-  try {
-    return await callGemini(userRequest, previousScenes);
-  } catch (firstErr) {
-    const delay = extractRetryDelay(firstErr);
-    await new Promise((r) => setTimeout(r, delay));
+  for (const model of GEMINI_MODELS) {
     try {
-      return await callGemini(userRequest, previousScenes);
-    } catch (secondErr) {
-      throw new Error(
-        `Gemini prompt generation failed after retry: ${secondErr instanceof Error ? secondErr.message : String(secondErr)}`
-      );
+      return await callGemini(model, userRequest, previousScenes);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+
+      if (msg.includes("429") || msg.toLowerCase().includes("quota")) {
+        const delay = extractRetryDelay(err);
+        await new Promise((r) => setTimeout(r, delay));
+        try {
+          return await callGemini(model, userRequest, previousScenes);
+        } catch {
+          continue;
+        }
+      }
+
+      if (
+        msg.includes("404") ||
+        msg.toLowerCase().includes("not found") ||
+        msg.toLowerCase().includes("not supported")
+      ) {
+        continue;
+      }
+
+      continue;
     }
   }
+
+  console.warn("All Gemini models failed — using fallback prompt builder");
+  return buildFallbackPrompt(userRequest);
 }
 
 export function buildHuggingFacePrompt(gemini: GeminiPromptResult): string {
