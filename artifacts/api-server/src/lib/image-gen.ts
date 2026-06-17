@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { Buffer } from "node:buffer";
-import { generateColoringPrompt, buildHuggingFacePrompt, buildNegativePrompt } from "../services/geminiService";
+import { generateColoringPrompt, buildHuggingFacePrompt, buildNegativePrompt, buildFallbackPrompt } from "../services/geminiService";
 import { generateColoringImage } from "../services/huggingfaceService";
 
 const imageCache = new Map<string, Buffer>();
@@ -15,10 +15,12 @@ export interface GenerateImageOptions {
 }
 
 /**
- * Generate a coloring-book line art image using Gemini (prompt) + Hugging Face (image).
- * Gemini analyzes the user request and creates an optimized structured prompt.
- * Hugging Face generates the final black-and-white coloring page image.
- * Includes in-memory caching (by prompt hash) and retry logic for both services.
+ * Generate a coloring-book line art image.
+ *
+ * Pipeline:
+ *  1. Hugging Face SDXL is always the image generator (primary).
+ *  2. Gemini optionally enhances the prompt first. If Gemini is unavailable
+ *     or fails, we fall back to a direct prompt built from the user request.
  */
 export async function generateImageBuffer(
   userRequest: string,
@@ -30,9 +32,18 @@ export async function generateImageBuffer(
   const cached = imageCache.get(key);
   if (cached) return cached;
 
-  const geminiResult = await generateColoringPrompt(userRequest, previousScenes);
-  const hfPrompt = buildHuggingFacePrompt(geminiResult);
-  const negativePrompt = buildNegativePrompt(geminiResult);
+  let hfPrompt: string;
+  let negativePrompt: string;
+
+  try {
+    const geminiResult = await generateColoringPrompt(userRequest, previousScenes);
+    hfPrompt = buildHuggingFacePrompt(geminiResult);
+    negativePrompt = buildNegativePrompt(geminiResult);
+  } catch {
+    const fallback = buildFallbackPrompt(userRequest);
+    hfPrompt = buildHuggingFacePrompt(fallback);
+    negativePrompt = buildNegativePrompt(fallback);
+  }
 
   const buf = await generateColoringImage(hfPrompt, negativePrompt);
 

@@ -2,19 +2,24 @@ import { HfInference } from "@huggingface/inference";
 
 const hf = new HfInference(process.env["HF_API_TOKEN"] ?? "");
 
-const MODEL = "black-forest-labs/FLUX.1-schnell";
+const MODEL = "stabilityai/stable-diffusion-xl-base-1.0";
 
-async function runHuggingFace(
-  prompt: string,
-  _negativePrompt: string
-): Promise<Buffer> {
+const COLORING_PROMPT_PREFIX =
+  "black and white coloring book page, clean thick outlines, no shading, no color fills, white background, printable quality, line art only,";
+
+const COLORING_NEGATIVE =
+  "color, shading, gradients, gray tones, realistic photo, blurry, dark background, text, watermark, filled areas, shadows, photorealistic";
+
+async function runSDXL(prompt: string, negativePrompt: string): Promise<Buffer> {
   const blob = await hf.textToImage({
     model: MODEL,
-    inputs: prompt,
+    inputs: `${COLORING_PROMPT_PREFIX} ${prompt}`,
     parameters: {
+      negative_prompt: `${COLORING_NEGATIVE}, ${negativePrompt}`,
       width: 1024,
       height: 1024,
-      num_inference_steps: 4,
+      num_inference_steps: 30,
+      guidance_scale: 7.5,
     },
   });
 
@@ -22,20 +27,18 @@ async function runHuggingFace(
   return Buffer.from(arrayBuffer);
 }
 
-async function runHuggingFaceSimplified(prompt: string): Promise<Buffer> {
-  const simplified = prompt
-    .split(",")
-    .slice(0, 8)
-    .join(",")
-    .trim();
+async function runSDXLSimplified(prompt: string): Promise<Buffer> {
+  const simplified = prompt.split(",").slice(0, 6).join(",").trim();
 
   const blob = await hf.textToImage({
     model: MODEL,
-    inputs: `coloring book page, black and white line art, thick outlines, ${simplified}`,
+    inputs: `${COLORING_PROMPT_PREFIX} ${simplified}`,
     parameters: {
+      negative_prompt: COLORING_NEGATIVE,
       width: 1024,
       height: 1024,
-      num_inference_steps: 4,
+      num_inference_steps: 20,
+      guidance_scale: 7.5,
     },
   });
 
@@ -48,10 +51,10 @@ export async function generateColoringImage(
   negativePrompt: string
 ): Promise<Buffer> {
   try {
-    return await runHuggingFace(prompt, negativePrompt);
+    return await runSDXL(prompt, negativePrompt);
   } catch (firstErr) {
     try {
-      return await runHuggingFaceSimplified(prompt);
+      return await runSDXLSimplified(prompt);
     } catch (secondErr) {
       throw new Error(
         `Hugging Face image generation failed after retry: ${secondErr instanceof Error ? secondErr.message : String(secondErr)}`

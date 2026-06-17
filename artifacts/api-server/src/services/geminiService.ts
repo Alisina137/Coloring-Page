@@ -40,7 +40,7 @@ function extractRetryDelay(err: unknown): number {
   return match ? Math.ceil(parseFloat(match[1])) * 1000 : 5000;
 }
 
-function buildFallbackPrompt(userRequest: string): GeminiPromptResult {
+export function buildFallbackPrompt(userRequest: string): GeminiPromptResult {
   return {
     style: "clean black and white coloring book line art",
     subject: userRequest,
