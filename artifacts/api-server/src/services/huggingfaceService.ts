@@ -5,10 +5,10 @@ const hf = new HfInference(process.env["HF_API_TOKEN"] ?? "");
 const MODEL = "stabilityai/stable-diffusion-xl-base-1.0";
 
 const COLORING_PROMPT_PREFIX =
-  "black and white coloring book page, clean thick outlines, no shading, no color fills, white background, printable quality, line art only,";
+  "professional coloring book page, clean black and white line art, white background, sharp vector-like outlines, high contrast, thick consistent line weight, no shading, no color fills, no gray tones, printable quality, clear subject separation, symmetrical balanced composition,";
 
 const COLORING_NEGATIVE =
-  "color, shading, gradients, gray tones, realistic photo, blurry, dark background, text, watermark, filled areas, shadows, photorealistic";
+  "blurry, sketchy, rough draft, unfinished, low quality, low contrast, distorted anatomy, extra limbs, extra legs, extra heads, malformed body, duplicate body parts, mutated animal, unrealistic proportions, cluttered composition, tiny details, confusing background, futuristic city, sci-fi environment, cyberpunk style, abstract art, surreal art, messy linework, overlapping objects, hard-to-color areas, unreadable subject, color, shading, gradients, gray tones, realistic photo, dark background, text, watermark, filled areas, shadows, photorealistic";
 
 async function runSDXL(prompt: string, negativePrompt: string): Promise<Buffer> {
   const blob = await hf.textToImage({
