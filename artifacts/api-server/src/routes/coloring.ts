@@ -10,7 +10,7 @@ import {
   GetColoringStatsResponse,
 } from "@workspace/api-zod";
 import { generateImageBuffer } from "../lib/image-gen";
-import { generateColoredIllustration } from "../services/huggingfaceService";
+import { generateColoredVersion } from "../services/huggingfaceService";
 
 const router: IRouter = Router();
 
@@ -62,16 +62,27 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
 
   const customPart = description ? ` Featuring: ${description}.` : "";
   const userRequest = `A ${genderAdjective} coloring book page with ${genreDescription} theme.${customPart} Complexity: ${ageDescription}. Age group: ${ageGroup} years old.`;
-  const coloredRequest = `${genderAdjective} ${genreDescription} scene${customPart} age group ${ageGroup}`;
 
   req.log.info({ gender, genre, ageGroup, description }, "Generating coloring page");
 
-  const [imageBuffer, coloredBuffer] = await Promise.all([
-    generateImageBuffer(userRequest),
-    generateColoredIllustration(coloredRequest).catch(() => null),
-  ]);
-
+  // Step 1: Generate the B&W coloring page
+  const imageBuffer = await generateImageBuffer(userRequest);
   const imageData = imageBuffer.toString("base64");
+
+  // Step 2: Build a colorization prompt from the genre's color guide steps
+  // so the colored hint uses the exact same colors the guide instructs
+  const guideSteps = COLOR_GUIDES[genre] ?? [];
+  const colorHints = guideSteps
+    .slice(0, 6)
+    .map((s) => s.replace(/^step \d+:\s*/i, "").replace(/\.$/, ""))
+    .join(", ");
+  const colorPrompt = `${genderAdjective} ${genreDescription} scene${customPart}, ${colorHints}`;
+
+  // Step 3: Colorize the B&W image using img2img — same composition, guided by color guide
+  const coloredBuffer = await generateColoredVersion(imageBuffer, colorPrompt).catch((err) => {
+    req.log.warn({ err }, "Colored version generation failed");
+    return null;
+  });
   const coloredImageData = coloredBuffer ? coloredBuffer.toString("base64") : null;
 
   const [page] = await db

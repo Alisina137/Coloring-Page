@@ -46,29 +46,43 @@ async function runSDXLSimplified(prompt: string): Promise<Buffer> {
   return Buffer.from(arrayBuffer);
 }
 
-export async function generateColoredIllustration(userRequest: string): Promise<Buffer> {
+/**
+ * Colorize an existing B&W coloring page using img2img.
+ * The colorPrompt should describe the specific colors from the color guide
+ * so the output matches what the guide instructs the child to use.
+ */
+export async function generateColoredVersion(
+  bwImageBuffer: Buffer,
+  colorPrompt: string
+): Promise<Buffer> {
+  const inputBlob = new Blob([bwImageBuffer], { type: "image/png" });
+
+  const positivePrompt = `colorful children's book illustration, ${colorPrompt}, bright vivid colors, flat color style, cheerful, bold clean outlines, high quality`;
+  const negativePrompt =
+    "black and white, grayscale, monochrome, blurry, dark, scary, photorealistic, sketchy, distorted anatomy, extra limbs, low quality, watermark";
+
   try {
-    const blob = await hf.textToImage({
+    const blob = await hf.imageToImage({
       model: MODEL,
-      inputs: `colorful children's cartoon illustration, ${userRequest}, bright vivid colors, flat color style, cheerful, detailed, bold outlines`,
+      inputs: inputBlob,
       parameters: {
-        negative_prompt: "black and white, grayscale, monochrome, blurry, dark, scary, photorealistic, sketchy",
-        width: 1024,
-        height: 1024,
-        num_inference_steps: 25,
+        prompt: positivePrompt,
+        negative_prompt: negativePrompt,
+        strength: 0.65,
+        num_inference_steps: 30,
         guidance_scale: 7.5,
       },
     });
     const arrayBuffer = await blob.arrayBuffer();
     return Buffer.from(arrayBuffer);
   } catch {
-    const blob = await hf.textToImage({
+    const blob = await hf.imageToImage({
       model: MODEL,
-      inputs: `colorful children's illustration, ${userRequest}, bright colors, cartoon style`,
+      inputs: inputBlob,
       parameters: {
+        prompt: `colorful children's illustration, ${colorPrompt}, bright colors, cartoon style`,
         negative_prompt: "black and white, grayscale, blurry",
-        width: 1024,
-        height: 1024,
+        strength: 0.65,
         num_inference_steps: 20,
         guidance_scale: 7.5,
       },
