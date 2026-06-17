@@ -34,12 +34,18 @@ Respond ONLY with valid JSON matching this schema exactly:
   "negative_prompt": ["color", "shading", "shadows", "photorealistic", "grayscale", "blurry", "filled areas", "dark background"]
 }`;
 
+function extractRetryDelay(err: unknown): number {
+  const msg = err instanceof Error ? err.message : String(err);
+  const match = msg.match(/retry in\s+([\d.]+)s/i);
+  return match ? Math.ceil(parseFloat(match[1])) * 1000 : 15000;
+}
+
 async function callGemini(
   userRequest: string,
   previousScenes?: string[]
 ): Promise<GeminiPromptResult> {
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-flash",
     systemInstruction: SYSTEM_INSTRUCTION,
   });
 
@@ -68,6 +74,8 @@ export async function generateColoringPrompt(
   try {
     return await callGemini(userRequest, previousScenes);
   } catch (firstErr) {
+    const delay = extractRetryDelay(firstErr);
+    await new Promise((r) => setTimeout(r, delay));
     try {
       return await callGemini(userRequest, previousScenes);
     } catch (secondErr) {
