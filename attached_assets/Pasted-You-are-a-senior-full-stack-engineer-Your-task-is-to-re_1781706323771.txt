@@ -1,0 +1,204 @@
+You are a senior full-stack engineer.
+
+Your task is to refactor the entire application's AI image generation system.
+
+IMPORTANT:
+Do NOT make partial changes.
+Do NOT leave old providers active.
+Do NOT create duplicate code paths.
+Perform a complete audit of the codebase and update every image generation workflow.
+
+--------------------------------------------------
+GOAL
+--------------------------------------------------
+
+Remove ALL existing image generation providers currently used by the application.
+
+This includes:
+
+- OpenAI image generation
+- Replicate image generation
+- Any hardcoded model endpoints
+- Any legacy image generation services
+- Any unused AI provider integrations
+
+The application should use ONLY these providers and models:
+
+1. Google Gemini Image Generation
+2. FLUX.1 Schnell
+3. FLUX.1 Dev
+4. Recraft V3
+
+No other image models should remain active.
+
+--------------------------------------------------
+NEW PROVIDER CONFIGURATION
+--------------------------------------------------
+
+Create support for the following environment variables:
+
+GEMINI_API_KEY=
+TOGETHER_API_KEY=
+RECRAFT_API_KEY=
+
+Remove dependencies on:
+
+AI_INTEGRATIONS_OPENAI_API_KEY
+AI_INTEGRATIONS_OPENAI_BASE_URL
+REPLICATE_API_TOKEN
+
+Remove all code that references these old secrets.
+
+--------------------------------------------------
+IMAGE GENERATION ARCHITECTURE
+--------------------------------------------------
+
+Create a centralized service:
+
+services/imageGenerationService.ts
+
+This service must be the ONLY place where image generation occurs.
+
+All pages, APIs, routes, actions and background jobs must use this service.
+
+--------------------------------------------------
+FAILOVER SYSTEM
+--------------------------------------------------
+
+Implement automatic failover.
+
+Generation order:
+
+1. Gemini Image
+2. FLUX.1 Schnell
+3. FLUX.1 Dev
+4. Recraft V3
+
+If any provider returns:
+
+- rate limit
+- quota exceeded
+- timeout
+- provider unavailable
+- server error
+
+Automatically retry using the next provider.
+
+Users should never see provider errors.
+
+Return only the final successful image.
+
+--------------------------------------------------
+COLORING BOOK OPTIMIZATION
+--------------------------------------------------
+
+The application is specifically for coloring books.
+
+Optimize prompts before sending them to models.
+
+Automatically append:
+
+"black and white coloring page,
+clean vector-style line art,
+bold outlines,
+white background,
+no shading,
+no grayscale,
+no color,
+printable coloring book style"
+
+For children:
+
+"large simple shapes,
+easy coloring,
+minimal detail"
+
+For adults:
+
+"intricate details,
+professional coloring book style"
+
+--------------------------------------------------
+CODEBASE AUDIT
+--------------------------------------------------
+
+Search entire project for:
+
+OpenAI
+Replicate
+DALL-E
+gpt-image
+image generations
+legacy AI providers
+custom AI wrappers
+
+Update every usage to use ImageGenerationService.
+
+No direct provider calls should remain anywhere else.
+
+--------------------------------------------------
+ERROR HANDLING
+--------------------------------------------------
+
+Add structured logs:
+
+Provider used
+Generation duration
+Fallback count
+Failure reason
+
+Example:
+
+Gemini failed → FLUX Schnell used
+
+Store logs without exposing API keys.
+
+--------------------------------------------------
+ADMIN DEBUG PANEL
+--------------------------------------------------
+
+Add a debug endpoint:
+
+/api/admin/image-provider-status
+
+Returns:
+
+Current provider order
+Provider availability
+Recent failures
+Fallback statistics
+
+--------------------------------------------------
+PERFORMANCE
+--------------------------------------------------
+
+Cache successful generations.
+
+Prevent duplicate requests.
+
+Add retry logic.
+
+Use async provider switching.
+
+Avoid blocking UI.
+
+--------------------------------------------------
+FINAL VERIFICATION
+--------------------------------------------------
+
+After refactoring:
+
+1. Search entire project.
+2. Confirm OpenAI image generation is removed.
+3. Confirm Replicate image generation is removed.
+4. Confirm all image creation uses ImageGenerationService.
+5. Confirm failover order:
+
+Gemini
+→ FLUX Schnell
+→ FLUX Dev
+→ Recraft
+
+6. Generate a report listing every file changed.
+
+Do not stop until all image-generation paths have been migrated.

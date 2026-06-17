@@ -41,10 +41,9 @@ router.get("/daily/challenge", async (req, res): Promise<void> => {
 
   req.log.info({ today, genre, theme }, "Generating daily challenge");
 
-  const imageBuffer = await generateImageBuffer(
-    `A vibrant flat-color children's cartoon illustration. ${genre} theme. Scene: ${theme}. Moderate number of elements, medium-sized shapes. Full natural background. Bold thick black outlines with distinct flat color regions. No gradients, no shading. Bright cheerful saturated colors. Kid-friendly cartoon style.`,
-    "1024x1024"
-  );
+  const userRequest = `A child-friendly coloring book page with ${genre} theme. Scene: ${theme}. Moderate complexity with clear distinct regions. Age group: 6-8 years old.`;
+
+  const imageBuffer = await generateImageBuffer(userRequest);
 
   const [challenge] = await db.insert(dailyChallengesTable).values({
     challengeDate: today,

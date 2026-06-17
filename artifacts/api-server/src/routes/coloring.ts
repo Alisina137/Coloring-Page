@@ -14,26 +14,26 @@ import { generateImageBuffer } from "../lib/image-gen";
 const router: IRouter = Router();
 
 const GENRES: Record<string, string> = {
-  Animals: "animals — cute and friendly animals in a natural setting",
-  Fantasy: "fantasy — magical creatures like dragons, unicorns, and wizards",
-  "Cars & Vehicles": "cars and vehicles — cool racing cars, trucks, and machines",
-  Sports: "sports — action-packed sports scene with players",
-  "Nature & Landscapes": "nature and landscapes — trees, mountains, flowers, and rivers",
-  Dinosaurs: "dinosaurs — friendly prehistoric dinosaurs in their world",
-  "Space & Planets": "space and planets — rockets, astronauts, stars, and planets",
-  "Princess & Fairy Tales": "princess and fairy tales — castles, fairies, and enchanted forests",
-  Superheroes: "superheroes — brave heroes with capes and superpowers",
-  "Farm Life": "farm life — barnyard animals, tractors, and rolling fields",
-  "Ocean & Sea Creatures": "ocean and sea creatures — fish, dolphins, whales, and coral reefs",
-  "Jungle Adventure": "jungle adventure — monkeys, toucans, and tropical plants",
-  "Robots & Sci-Fi": "robots and sci-fi — friendly robots and futuristic technology",
-  "Holiday Themes": "holiday themes — festive holiday decorations and characters",
-  "Myths & Legends": "myths and legends — legendary creatures from ancient stories",
-  "School & Education Scenes": "school and education — classroom, books, pencils, and learning",
-  "Food & Sweets": "food and sweets — cakes, cupcakes, fruits, and tasty treats",
-  Transportation: "transportation — trains, planes, boats, and vehicles",
-  "Cute Cartoon Characters": "cute cartoon characters — adorable animated characters",
-  "Daily Life Scenes": "daily life scenes — children playing, families, and everyday activities",
+  Animals: "cute and friendly animals in a natural setting",
+  Fantasy: "magical creatures like dragons, unicorns, and wizards",
+  "Cars & Vehicles": "cool racing cars, trucks, and machines",
+  Sports: "action-packed sports scene with players",
+  "Nature & Landscapes": "trees, mountains, flowers, and rivers",
+  Dinosaurs: "friendly prehistoric dinosaurs in their world",
+  "Space & Planets": "rockets, astronauts, stars, and planets",
+  "Princess & Fairy Tales": "castles, fairies, and enchanted forests",
+  Superheroes: "brave heroes with capes and superpowers",
+  "Farm Life": "barnyard animals, tractors, and rolling fields",
+  "Ocean & Sea Creatures": "fish, dolphins, whales, and coral reefs",
+  "Jungle Adventure": "monkeys, toucans, and tropical plants",
+  "Robots & Sci-Fi": "friendly robots and futuristic technology",
+  "Holiday Themes": "festive holiday decorations and characters",
+  "Myths & Legends": "legendary creatures from ancient stories",
+  "School & Education Scenes": "classroom, books, pencils, and learning",
+  "Food & Sweets": "cakes, cupcakes, fruits, and tasty treats",
+  Transportation: "trains, planes, boats, and vehicles",
+  "Cute Cartoon Characters": "adorable animated characters",
+  "Daily Life Scenes": "children playing, families, and everyday activities",
 };
 
 router.post("/coloring/generate", async (req, res): Promise<void> => {
@@ -54,18 +54,18 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
 
   const ageDescription =
     ageGroup === "3-5"
-      ? "very few elements, maximum 3-4 large simple objects, huge bold shapes, absolutely no fine details or small parts"
+      ? "very simple, 3-4 large bold shapes, minimal details, suitable for toddlers"
       : ageGroup === "6-8"
-        ? "moderate number of elements, medium-sized shapes with some secondary details, clear distinct regions"
-        : "many elements, rich scene with fine details, small intricate parts, layered composition";
+        ? "moderate complexity, clear distinct regions, some secondary details"
+        : "detailed composition, fine elements, layered scene, suitable for older children";
 
-  const customPart = description ? ` Specifically featuring: ${description}.` : "";
+  const customPart = description ? ` Featuring: ${description}.` : "";
 
-  const prompt = `A vibrant flat-color children's cartoon illustration. ${genderAdjective} ${genreDescription} theme with a full natural background and environment — sky, ground, setting — preserved and richly colored.${customPart} Detail level: ${ageDescription}. Bold thick black outlines with distinct flat color regions. No gradients, no shading, no textures. Bright cheerful saturated colors. Kid-friendly cartoon style suitable as a coloring page reference.`;
+  const userRequest = `A ${genderAdjective} coloring book page with ${genreDescription} theme.${customPart} Complexity: ${ageDescription}. Age group: ${ageGroup} years old.`;
 
   req.log.info({ gender, genre, ageGroup, description }, "Generating coloring page");
 
-  const imageBuffer = await generateImageBuffer(prompt, "1024x1024");
+  const imageBuffer = await generateImageBuffer(userRequest);
   const imageData = imageBuffer.toString("base64");
 
   const [page] = await db

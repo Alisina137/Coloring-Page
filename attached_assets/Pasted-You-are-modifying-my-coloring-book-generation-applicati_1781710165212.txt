@@ -1,0 +1,202 @@
+You are modifying my coloring book generation application.
+
+IMPORTANT:
+Remove all existing AI image generation providers and integrations.
+
+The application should ONLY use these two AI services:
+
+1. Google Gemini API
+2. Hugging Face Inference API
+
+Remove any usage, code, environment variables, API calls, and dependencies related to:
+- Recraft
+- Leonardo AI
+- open ai
+- Any other image generation provider
+
+--------------------------------------------------
+
+NEW AI ARCHITECTURE
+
+The generation workflow should work like this:
+
+STEP 1 — Gemini AI (Creative Brain)
+
+Use Gemini API to analyze the user's coloring book request and create a structured image generation plan.
+
+Gemini should generate:
+
+- Coloring book theme
+- Character/object descriptions
+- Scene composition
+- Background details
+- Line-art style instructions
+- Age category suitability
+- Complexity level
+- Negative prompts
+- Consistent style instructions for all pages
+
+Example output format:
+
+{
+ "style": "clean black and white coloring book line art",
+ "subject": "",
+ "scene_description": "",
+ "details": [],
+ "complexity": "medium",
+ "negative_prompt": [
+    "color",
+    "shadows",
+    "photorealistic",
+    "gray scale",
+    "blurry",
+    "filled areas"
+ ]
+}
+
+Gemini should NOT generate the final image.
+
+Gemini only creates optimized prompts for the image model.
+
+--------------------------------------------------
+
+STEP 2 — Hugging Face Image Generation
+
+Use Hugging Face API to generate the actual coloring book images.
+
+The generated images must follow:
+
+Style:
+- black and white coloring book page
+- clean outlines
+- thick printable lines
+- no colors
+- no shading
+- no gradients
+- white background
+- KDP coloring book quality
+
+The image prompt sent to Hugging Face should combine:
+
+- Gemini generated description
+- User request
+- Coloring book style requirements
+
+--------------------------------------------------
+
+IMAGE GENERATION REQUIREMENTS
+
+Every generated page must:
+
+- Be suitable for printing
+- Have clear empty spaces for coloring
+- Have strong outlines
+- Have simple but detailed compositions
+- Avoid realistic photography style
+- Avoid filled black areas
+- Avoid gray tones
+- Avoid text inside images
+
+Target format:
+
+1024x1024 or higher resolution
+
+--------------------------------------------------
+
+API CONFIGURATION
+
+Create environment variables:
+
+GEMINI_API_KEY
+
+HF_API_TOKEN
+
+Never expose API keys in frontend code.
+
+All AI calls must happen from backend/server side.
+
+--------------------------------------------------
+
+FALLBACK SYSTEM
+
+If Gemini fails:
+
+- Retry request
+- Return a useful error message
+
+If Hugging Face generation fails:
+
+- Retry with simplified prompt
+- Reduce complexity
+- Return error only after retries fail
+
+--------------------------------------------------
+
+CODE STRUCTURE
+
+Create separate services:
+
+/services/geminiService
+
+Responsibilities:
+- Generate image prompts
+- Analyze coloring book ideas
+- Maintain style consistency
+
+/services/huggingfaceService
+
+Responsibilities:
+- Send image generation requests
+- Handle responses
+- Save generated images
+
+--------------------------------------------------
+
+PROMPT MEMORY / CONSISTENCY
+
+For multi-page coloring books:
+
+Use previous generated pages information.
+
+Gemini should remember:
+
+- Main characters
+- Art style
+- Theme
+- Visual consistency
+- Previous scenes
+
+Every new page should match previous pages.
+
+--------------------------------------------------
+
+UI REQUIREMENTS
+
+Keep existing UI.
+
+Only replace the AI generation backend.
+
+The user flow remains:
+
+User enters coloring book idea
+↓
+Gemini creates optimized image prompt
+↓
+Hugging Face generates coloring page
+↓
+Display result
+↓
+Allow multiple page generation
+
+--------------------------------------------------
+
+Before finishing:
+
+Check the whole project and remove:
+
+- old AI providers
+- unused API keys
+- unused packages
+- old image generation functions
+
+Make the application clean and only dependent on Gemini + Hugging Face.
