@@ -10,8 +10,8 @@ import {
   GetColoringStatsResponse,
 } from "@workspace/api-zod";
 import { generateImageBuffer } from "../lib/image-gen";
-import { generateColoredVersion } from "../services/huggingfaceService";
-import { colorizeWithDalle } from "../services/openaiService";
+import { generateColorIllustrationHF } from "../services/huggingfaceService";
+import { generateColorIllustration } from "../services/openaiService";
 
 const router: IRouter = Router();
 
@@ -85,30 +85,49 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
   const imageBuffer = await generateImageBuffer(userRequest, { quality: quality ?? "balanced" });
   const imageData = imageBuffer.toString("base64");
 
-  // Step 2: Build a colorization prompt from the genre's color guide steps
-  // so the colored hint uses the exact same colors the guide instructs
+  // Step 2: Build a rich scene description for the Color Hint illustration.
+  // The Color Hint is a FRESH full-color illustration generated from scratch —
+  // NOT a recoloring or tinting of the B&W page. This ensures vibrant, genuine color.
   const guideSteps = COLOR_GUIDES[genre] ?? [];
-  const colorHints = guideSteps
-    .slice(0, 6)
+  const colorKeywords = guideSteps
+    .slice(0, 5)
     .map((s) => s.replace(/^step \d+:\s*/i, "").replace(/\.$/, ""))
-    .join(", ");
-  const colorPrompt = `${genderAdjective} ${genreDescription} scene${customPart}, ${colorHints}`;
+    .join("; ");
 
-  // Step 3: Colorize the B&W image — try OpenAI DALL-E edit first, fall back to HuggingFace img2img
+  // Build a detailed scene description combining all user choices
+  const sceneForColor = [
+    `${genderAdjective} ${genreDescription} scene`,
+    description ? description : null,
+    artStyle ? `${artStyle} art style` : null,
+    characterName ? `with a character named ${characterName}` : null,
+    colorKeywords || null,
+    "for children, beautiful atmosphere",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const colorHintQuality = quality === "premium" ? "hd" : "standard";
+
+  // Step 3: Generate Color Hint as a brand-new full-color illustration via DALL-E 3.
+  // Falls back to HuggingFace text-to-image (also fresh generation, not img2img).
+  const stepsMap: Record<string, number> = { fast: 20, balanced: 25, premium: 35 };
+  const colorSteps = stepsMap[quality ?? "balanced"] ?? 25;
+
   let coloredBuffer: Buffer | null = null;
   if (process.env["OPENAI_API_KEY"]) {
     try {
-      coloredBuffer = await colorizeWithDalle(imageBuffer, colorPrompt);
-      req.log.info("Colorization via OpenAI DALL-E");
+      coloredBuffer = await generateColorIllustration(sceneForColor, colorHintQuality);
+      req.log.info("Color Hint generated via DALL-E 3 (fresh illustration)");
     } catch (err) {
-      req.log.warn({ err }, "OpenAI colorization failed — falling back to HuggingFace img2img");
+      req.log.warn({ err }, "DALL-E 3 color illustration failed — falling back to HuggingFace");
     }
   }
   if (!coloredBuffer) {
-    coloredBuffer = await generateColoredVersion(imageBuffer, colorPrompt).catch((err) => {
-      req.log.warn({ err }, "HuggingFace colorization also failed");
+    coloredBuffer = await generateColorIllustrationHF(sceneForColor, colorSteps).catch((err) => {
+      req.log.warn({ err }, "HuggingFace color illustration also failed");
       return null;
     });
+    if (coloredBuffer) req.log.info("Color Hint generated via HuggingFace (fresh illustration)");
   }
   const coloredImageData = coloredBuffer ? coloredBuffer.toString("base64") : null;
 

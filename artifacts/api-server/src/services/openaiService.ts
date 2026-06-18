@@ -56,33 +56,30 @@ export async function generateWithDalle(
   return Buffer.from(b64, "base64");
 }
 
+const COLOR_HINT_STYLE_SUFFIX =
+  "Professional children's book illustration, fully colored artwork. Vibrant saturated colors. Rich dynamic lighting and beautiful shadows. Gorgeous color palette with depth and atmosphere. Pixar-quality digital painting. Highly detailed environment. Cinematic composition. Lush vivid colors with beautiful color harmony. Children's illustration quality. Full color only — no outlines-only, no black and white, no line art.";
+
 /**
- * Colorize an existing B&W image using DALL-E edit (img variation approach).
- * Prompt is built from the color guide steps.
- * Falls back gracefully; throws with isQuota on quota errors.
+ * Generate a full-color children's book illustration for the Color Hint.
+ * This is a FRESH text-to-image generation — NOT an edit of the B&W page.
+ * Produces vibrant, fully colored artwork from the same scene description.
  */
-export async function colorizeWithDalle(
-  bwImageBuffer: Buffer,
-  colorPrompt: string
+export async function generateColorIllustration(
+  sceneDescription: string,
+  quality: "standard" | "hd" = "standard"
 ): Promise<Buffer> {
-  const editPrompt = `Add bright, vivid colors to this coloring book page. ${colorPrompt}. Keep the same composition, outlines and shapes. Flat color children's book illustration style. No new elements.`;
+  const fullPrompt = `${sceneDescription}. ${COLOR_HINT_STYLE_SUFFIX}`;
 
+  let response;
   try {
-    const file = await OpenAI.toFile(bwImageBuffer, "coloring-page.png", { type: "image/png" });
-
-    const response = await client.images.edit({
-      model: "dall-e-2",
-      image: file,
-      prompt: editPrompt,
+    response = await client.images.generate({
+      model: "dall-e-3",
+      prompt: fullPrompt,
       n: 1,
       size: "1024x1024",
+      quality,
       response_format: "b64_json",
     });
-
-    const b64 = response.data?.[0]?.b64_json;
-    if (!b64) throw new Error("DALL-E edit returned no image data");
-
-    return Buffer.from(b64, "base64");
   } catch (err) {
     if (isQuotaOrRateError(err)) {
       const quotaErr = new Error("OpenAI quota/rate limit reached") as Error & { isQuota: boolean };
@@ -91,4 +88,8 @@ export async function colorizeWithDalle(
     }
     throw err;
   }
+
+  const b64 = response.data?.[0]?.b64_json;
+  if (!b64) throw new Error("DALL-E returned no image data for color illustration");
+  return Buffer.from(b64, "base64");
 }

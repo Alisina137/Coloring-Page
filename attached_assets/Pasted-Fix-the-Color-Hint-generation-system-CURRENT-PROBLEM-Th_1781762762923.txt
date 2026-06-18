@@ -1,0 +1,104 @@
+Fix the Color Hint generation system.
+
+CURRENT PROBLEM:
+The "Color Hint" image is almost identical to the black-and-white coloring page. It is simply a lightly tinted grayscale version instead of a fully colored illustration. Users expect a professional, vibrant, realistic color preview that helps them understand how the finished artwork could look.
+
+REQUIRED SOLUTION:
+
+1. Generate TWO COMPLETELY SEPARATE IMAGES:
+
+A) Coloring Page
+- Black and white only
+- Clean coloring-book line art
+- No colors
+- No shading
+- No grayscale
+- Printable
+
+B) Color Hint
+- Generate a NEW full-color illustration from the SAME scene description
+- Do NOT recolor the black-and-white image
+- Do NOT apply color overlays
+- Do NOT tint the line-art image
+- Create a brand-new high-quality colored artwork
+
+2. Color Hint Requirements:
+
+- Vibrant professional colors
+- Rich lighting
+- Natural color palettes
+- Beautiful gradients
+- Depth and atmosphere
+- Children's book illustration quality
+- Pixar-quality color styling when appropriate
+- Correct colors for animals, nature, vehicles, and environments
+- High contrast and visually appealing
+- Consistent with the generated coloring page scene
+
+3. Example:
+
+If the coloring page contains:
+"Ocean scene with dolphins, fish, coral reef, mountains, and clouds"
+
+Generate a color hint showing:
+- Deep blue ocean water
+- Turquoise shallow water
+- Realistic gray-blue dolphins
+- Colorful tropical fish
+- Bright coral reef (orange, pink, purple, red)
+- Green sea plants
+- Blue sky
+- White clouds
+- Natural mountain colors
+
+The result should look like a finished children's book illustration, not a tinted coloring page.
+
+4. Image Generation Logic:
+
+Step 1:
+Generate detailed scene description.
+
+Step 2:
+Generate Coloring Page prompt.
+
+Step 3:
+Generate Color Hint prompt separately.
+
+Example:
+
+COLORING PAGE PROMPT:
+"Professional coloring book page, black and white line art, bold outlines, large coloring spaces, printable coloring page, no color, no shading."
+
+COLOR HINT PROMPT:
+"Professional children's book illustration of the same scene, vibrant colors, detailed lighting, rich color palette, polished digital artwork, beautiful atmosphere, highly detailed, visually stunning."
+
+5. Improve Prompt Quality:
+
+For Color Hint generation automatically enhance prompts with:
+- realistic lighting
+- vibrant colors
+- cinematic composition
+- children's illustration quality
+- professional digital painting
+- highly detailed environment
+- beautiful color harmony
+
+6. UI Behavior:
+
+The Color Hint panel should always display a genuinely colored image.
+Users should immediately see a dramatic visual difference between:
+- Coloring Page (black & white)
+- Color Hint (fully colored)
+
+7. Validation:
+
+Before displaying the Color Hint image, verify:
+- Image is not grayscale
+- Image contains multiple colors
+- Average color saturation exceeds a minimum threshold
+- Image is visually distinct from the black-and-white version
+
+If validation fails, regenerate the Color Hint image automatically.
+
+GOAL:
+The Color Hint should look like a premium finished illustration that inspires users and helps them color the page, not a slightly modified black-and-white image.
