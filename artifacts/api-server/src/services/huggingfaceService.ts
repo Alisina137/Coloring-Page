@@ -10,7 +10,7 @@ const COLORING_PROMPT_PREFIX =
 const COLORING_NEGATIVE =
   "color, shading, gradients, shadows, grayscale, gray tones, sketch style, pencil style, rough lines, hand-drawn imperfections, text, captions, watermarks, logos, signatures, extra limbs, missing limbs, distorted body parts, extra heads, malformed anatomy, unrealistic proportions, cluttered composition, excessive details, blurry, low quality, low contrast, messy linework, unrecognizable subject, dark background, filled areas, photorealistic, realistic photo, sci-fi, cyberpunk, abstract, surreal, unfinished, rough draft";
 
-async function runSDXL(prompt: string, negativePrompt: string): Promise<Buffer> {
+async function runSDXL(prompt: string, negativePrompt: string, steps = 30): Promise<Buffer> {
   const blob = await hf.textToImage({
     model: MODEL,
     inputs: `${COLORING_PROMPT_PREFIX} ${prompt}`,
@@ -18,7 +18,7 @@ async function runSDXL(prompt: string, negativePrompt: string): Promise<Buffer> 
       negative_prompt: `${COLORING_NEGATIVE}, ${negativePrompt}`,
       width: 1024,
       height: 1024,
-      num_inference_steps: 30,
+      num_inference_steps: steps,
       guidance_scale: 7.5,
     },
   });

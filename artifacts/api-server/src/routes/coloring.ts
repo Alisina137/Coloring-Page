@@ -45,7 +45,7 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
     return;
   }
 
-  const { gender, genre, ageGroup, description } = parsed.data;
+  const { gender, genre, ageGroup, description, artStyle, background, lineThickness, quality, characterName } = parsed.data;
   const genreDescription = GENRES[genre] ?? genre;
   const genderAdjective =
     gender === "Boy"
@@ -56,18 +56,33 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
 
   const ageDescription =
     ageGroup === "3-5"
-      ? "very simple, 3-4 large bold shapes, minimal details, suitable for toddlers"
+      ? "very simple, 3-4 large bold shapes, minimal details, thick lines, suitable for toddlers"
       : ageGroup === "6-8"
         ? "moderate complexity, clear distinct regions, some secondary details"
         : "detailed composition, fine elements, layered scene, suitable for older children";
 
   const customPart = description ? ` Featuring: ${description}.` : "";
-  const userRequest = `A ${genderAdjective} coloring book page with ${genreDescription} theme.${customPart} Complexity: ${ageDescription}. Age group: ${ageGroup} years old.`;
+  const artStylePart = artStyle ? ` Art style: ${artStyle}.` : "";
+  const backgroundPart =
+    background === "none"
+      ? " No background — white space only around the subject."
+      : background === "detailed"
+        ? " Include a detailed scene background."
+        : " Simple minimal background.";
+  const thicknessPart =
+    lineThickness === "thin"
+      ? " Use thin delicate outlines."
+      : lineThickness === "thick"
+        ? " Use very thick bold outlines."
+        : " Use medium-weight outlines.";
+  const namePart = characterName ? ` The main character is named ${characterName}.` : "";
 
-  req.log.info({ gender, genre, ageGroup, description }, "Generating coloring page");
+  const userRequest = `A ${genderAdjective} coloring book page with ${genreDescription} theme.${customPart}${artStylePart}${backgroundPart}${thicknessPart}${namePart} Complexity: ${ageDescription}. Age group: ${ageGroup} years old.`;
+
+  req.log.info({ gender, genre, ageGroup, description, artStyle, quality }, "Generating coloring page");
 
   // Step 1: Generate the B&W coloring page
-  const imageBuffer = await generateImageBuffer(userRequest);
+  const imageBuffer = await generateImageBuffer(userRequest, { quality: quality ?? "balanced" });
   const imageData = imageBuffer.toString("base64");
 
   // Step 2: Build a colorization prompt from the genre's color guide steps

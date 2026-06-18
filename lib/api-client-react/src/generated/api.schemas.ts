@@ -35,6 +35,16 @@ export interface GenerateColoringPageBody {
   description?: string | null;
   /** @nullable */
   profileId?: number | null;
+  /** @nullable */
+  artStyle?: string | null;
+  /** @nullable */
+  background?: "none" | "simple" | "detailed" | null;
+  /** @nullable */
+  lineThickness?: "thick" | "medium" | "thin" | null;
+  /** @nullable */
+  quality?: "fast" | "balanced" | "premium" | null;
+  /** @nullable */
+  characterName?: string | null;
 }
 
 export interface GeneratedImage {

@@ -23,6 +23,11 @@ export const GenerateColoringPageBody = zod.object({
   ageGroup: zod.enum(["3-5", "6-8", "9+"]),
   description: zod.string().nullish(),
   profileId: zod.number().nullish(),
+  artStyle: zod.string().nullish(),
+  background: zod.enum(["none", "simple", "detailed"]).nullish(),
+  lineThickness: zod.enum(["thick", "medium", "thin"]).nullish(),
+  quality: zod.enum(["fast", "balanced", "premium"]).nullish(),
+  characterName: zod.string().nullish(),
 });
 
 export const GenerateColoringPageResponse = zod.object({

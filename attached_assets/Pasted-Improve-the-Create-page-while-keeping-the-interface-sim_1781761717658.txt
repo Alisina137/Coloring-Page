@@ -1,0 +1,80 @@
+Improve the Create page while keeping the interface simple, child-friendly, and easy to use.
+
+Apply the following changes:
+
+1. Add an "Art Style" section below "What should we draw?" with the following options:
+   - Cute Cartoon
+   - Realistic
+   - Kawaii
+   - Fantasy
+   - Educational
+
+2. Add a "Background" section with:
+   - None
+   - Simple
+   - Detailed
+
+3. Add a "Line Thickness" section with:
+   - Thick
+   - Medium
+   - Thin
+
+4. Add a "Complexity" section with:
+   - Easy
+   - Medium
+   - Hard
+
+5. Replace the current category dropdown with visually appealing category cards that children can easily recognize:
+   - Animals
+   - Dinosaurs
+   - Vehicles
+   - Fantasy
+   - Space
+   - Ocean
+   - Farm
+   - Princesses
+   - Superheroes
+
+6. Add a "Generate Variations" option:
+   - 1 Variation
+   - 2 Variations
+   - 4 Variations
+
+7. Add an optional "Character Name" field so users can create consistent characters across multiple pages.
+
+8. Add an optional "Enhanced Prompt Preview" area that shows the AI-enhanced version of the user's description before generation.
+
+9. Add a "Generation Quality" selector:
+   - Fast
+   - Balanced
+   - Premium
+
+10. Keep the current age selection but use it to automatically influence image complexity:
+    - 3–5 years → very simple objects, thick lines, minimal details
+    - 6–8 years → moderate details and backgrounds
+    - 9+ years → more detailed scenes and patterns
+
+11. Update the image generation logic so that every generated coloring page follows these strict rules:
+    - Black and white line art only
+    - No colors
+    - No shading
+    - No grayscale
+    - No shadows
+    - White background
+    - Thick clean outlines
+    - Large coloring spaces
+    - Correct anatomy
+    - No extra limbs
+    - No cropped subjects
+    - No text
+    - No watermark
+    - Printable coloring-book quality
+    - Child-friendly content
+    - Clear recognizable subjects
+    - Centered composition
+
+12. Improve the overall UI while maintaining the existing playful Coloring Magic design language, rounded corners, bright colors, excellent mobile responsiveness, and accessibility.
+
+13. Keep the page uncluttered. Organize advanced options inside a collapsible "Advanced Settings" panel so beginners can generate pages quickly while advanced users can customize results.
+
+The goal is to significantly improve coloring page quality and user control without making the Create page feel complicated.

@@ -25,7 +25,10 @@ function isQuotaOrRateError(err: unknown): boolean {
  * Throws with `isQuota: true` property when the daily limit / quota is hit
  * so the caller can fall back to another provider.
  */
-export async function generateWithDalle(prompt: string): Promise<Buffer> {
+export async function generateWithDalle(
+  prompt: string,
+  quality: "standard" | "hd" = "standard"
+): Promise<Buffer> {
   const fullPrompt = `${prompt}. ${DALLE_STYLE_SUFFIX}`;
 
   let response;
@@ -35,7 +38,7 @@ export async function generateWithDalle(prompt: string): Promise<Buffer> {
       prompt: fullPrompt,
       n: 1,
       size: "1024x1024",
-      quality: "standard",
+      quality,
       response_format: "b64_json",
     });
   } catch (err) {
