@@ -11,6 +11,7 @@ import {
 } from "@workspace/api-zod";
 import { generateImageBuffer } from "../lib/image-gen";
 import { generateColoredVersion } from "../services/huggingfaceService";
+import { colorizeWithDalle } from "../services/openaiService";
 
 const router: IRouter = Router();
 
@@ -78,11 +79,22 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
     .join(", ");
   const colorPrompt = `${genderAdjective} ${genreDescription} scene${customPart}, ${colorHints}`;
 
-  // Step 3: Colorize the B&W image using img2img — same composition, guided by color guide
-  const coloredBuffer = await generateColoredVersion(imageBuffer, colorPrompt).catch((err) => {
-    req.log.warn({ err }, "Colored version generation failed");
-    return null;
-  });
+  // Step 3: Colorize the B&W image — try OpenAI DALL-E edit first, fall back to HuggingFace img2img
+  let coloredBuffer: Buffer | null = null;
+  if (process.env["OPENAI_API_KEY"]) {
+    try {
+      coloredBuffer = await colorizeWithDalle(imageBuffer, colorPrompt);
+      req.log.info("Colorization via OpenAI DALL-E");
+    } catch (err) {
+      req.log.warn({ err }, "OpenAI colorization failed — falling back to HuggingFace img2img");
+    }
+  }
+  if (!coloredBuffer) {
+    coloredBuffer = await generateColoredVersion(imageBuffer, colorPrompt).catch((err) => {
+      req.log.warn({ err }, "HuggingFace colorization also failed");
+      return null;
+    });
+  }
   const coloredImageData = coloredBuffer ? coloredBuffer.toString("base64") : null;
 
   const [page] = await db
