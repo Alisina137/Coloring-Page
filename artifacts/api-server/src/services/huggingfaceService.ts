@@ -5,10 +5,10 @@ const hf = new HfInference(process.env["HF_API_TOKEN"] ?? "");
 const MODEL = "stabilityai/stable-diffusion-xl-base-1.0";
 
 const COLORING_PROMPT_PREFIX =
-  "professional coloring book page, clean black and white line art, white background, sharp vector-like outlines, high contrast, thick consistent line weight, no shading, no color fills, no gray tones, printable quality, clear subject separation, symmetrical balanced composition,";
+  "professional children's coloring book page, bold outline coloring book illustration, printable line art, vector-style black and white, white background, thick smooth consistent outlines, large open coloring areas, crisp clean lines, 8.5x11 printable quality, no shading, no color fills, no gray tones, no text, no watermark,";
 
 const COLORING_NEGATIVE =
-  "blurry, sketchy, rough draft, unfinished, low quality, low contrast, distorted anatomy, extra limbs, extra legs, extra heads, malformed body, duplicate body parts, mutated animal, unrealistic proportions, cluttered composition, tiny details, confusing background, futuristic city, sci-fi environment, cyberpunk style, abstract art, surreal art, messy linework, overlapping objects, hard-to-color areas, unreadable subject, color, shading, gradients, gray tones, realistic photo, dark background, text, watermark, filled areas, shadows, photorealistic";
+  "color, shading, gradients, shadows, grayscale, gray tones, sketch style, pencil style, rough lines, hand-drawn imperfections, text, captions, watermarks, logos, signatures, extra limbs, missing limbs, distorted body parts, extra heads, malformed anatomy, unrealistic proportions, cluttered composition, excessive details, blurry, low quality, low contrast, messy linework, unrecognizable subject, dark background, filled areas, photorealistic, realistic photo, sci-fi, cyberpunk, abstract, surreal, unfinished, rough draft";
 
 async function runSDXL(prompt: string, negativePrompt: string): Promise<Buffer> {
   const blob = await hf.textToImage({

@@ -11,62 +11,47 @@ export interface GeminiPromptResult {
   negative_prompt: string[];
 }
 
-const SYSTEM_INSTRUCTION = `You are an expert children's coloring book illustrator.
+const SYSTEM_INSTRUCTION = `You are an expert coloring book illustrator.
 
-Your task is to generate HIGH-QUALITY COLORING PAGE PROMPTS.
+Generate a HIGH-QUALITY coloring book page based on the user's topic.
 
-IMPORTANT RULES:
-1. ALWAYS create natural, realistic, recognizable subjects.
-2. The main subject must be immediately obvious to a child and adult.
-3. Never generate futuristic, sci-fi, abstract, surreal, fantasy, cyberpunk, or confusing environments unless explicitly requested.
-4. Animals must have correct anatomy and the correct number of legs, wings, ears, eyes, tails, etc.
-5. Vehicles must have realistic proportions and recognizable shapes.
-6. Buildings and landscapes must look natural and believable.
-7. The subject must be centered and occupy most of the page.
-8. Use clean black outlines with consistent line weight.
-9. Create large coloring areas suitable for coloring books.
-10. Avoid excessive tiny details, visual clutter, overlapping objects, and messy backgrounds.
-11. Avoid sketchy, blurry, rough, incomplete, distorted, mutated, or low-quality drawings.
-12. Never create extra limbs, extra heads, fused body parts, duplicate objects, or malformed anatomy.
-13. Keep backgrounds simple and supportive of the main subject.
-14. The image must clearly communicate exactly what was requested.
+STRICT REQUIREMENTS:
+- Create clean black-and-white line art only.
+- No colors, shading, gradients, shadows, or grayscale.
+- Thick, smooth, consistent outlines.
+- Large open spaces suitable for coloring.
+- Clear and recognizable subject.
+- Simple background elements only when relevant.
+- Child-friendly and family-friendly.
+- Correct anatomy and proportions.
+- No extra limbs, missing limbs, or distorted body parts.
+- No text, captions, watermarks, logos, or signatures.
+- No sketch style, pencil style, rough lines, or hand-drawn imperfections.
+- Center the main subject prominently.
+- Use a white background.
+- Coloring book quality suitable for printing at 8.5 x 11 inches.
+- Avoid excessive details that make coloring difficult.
+- Ensure every object is fully visible and clearly separated.
+- Use crisp vector-style line art.
 
-STYLE REQUIREMENTS:
-- Professional coloring book page
-- Clean black and white line art
-- White background
-- Sharp vector-like outlines
-- High contrast
-- Coloring-book friendly
-- Clear subject separation
-- Printable quality
-- Symmetrical and balanced composition
-- Easy to recognize at first glance
+QUALITY CHECK (verify before generating):
+1. The subject is immediately recognizable.
+2. Animals have the correct number of legs and body parts.
+3. Vehicles have realistic structure and proportions.
+4. The composition is balanced and uncluttered.
+5. The image contains only black outlines on a white background.
 
-ANIMAL RULES:
-- Correct species anatomy
-- Correct number of legs
-- Natural pose
-- Realistic proportions
-- Clear face and eyes
-- No mutations
-- No hybrid creatures unless requested
-
-VEHICLE RULES:
-- Realistic proportions
-- Clearly visible wheels
-- Recognizable model type
-- No futuristic redesigns
-- No impossible shapes
+OUTPUT STYLE:
+Professional children's coloring book page, bold outline coloring book illustration, printable line art, vector-style black and white.
 
 Respond ONLY with valid JSON matching this schema exactly:
 {
-  "style": "professional coloring book page, clean black and white line art, white background, sharp vector-like outlines, high contrast, printable quality",
-  "subject": "<the single clearly-defined main subject — animal, vehicle, character, or scene>",
-  "scene_description": "<centered composition, subject occupying most of the page, simple supportive background, realistic and recognizable, natural pose and proportions>",
-  "details": ["<anatomy detail>", "<pose or action detail>", "<background element>", "<line art quality note>"],
+  "style": "professional children's coloring book page, bold outline coloring book illustration, printable line art, vector-style black and white, white background",
+  "subject": "<single clearly-defined main subject — animal, vehicle, character, or scene, immediately recognizable>",
+  "scene_description": "<centered composition, subject occupying most of page, correct anatomy, balanced and uncluttered, simple background only if relevant>",
+  "details": ["<anatomy/proportion detail>", "<pose or action>", "<background element if any>", "<line art quality note>"],
   "complexity": "simple|medium|detailed",
-  "negative_prompt": ["blurry", "sketchy", "rough draft", "unfinished", "low quality", "low contrast", "distorted anatomy", "extra limbs", "extra legs", "extra heads", "malformed body", "duplicate body parts", "mutated animal", "unrealistic proportions", "cluttered composition", "tiny details", "confusing background", "futuristic city", "sci-fi environment", "cyberpunk style", "abstract art", "surreal art", "messy linework", "overlapping objects", "hard-to-color areas", "unreadable subject"]
+  "negative_prompt": ["color", "shading", "gradients", "shadows", "grayscale", "gray tones", "sketch style", "pencil style", "rough lines", "hand-drawn imperfections", "text", "captions", "watermarks", "logos", "signatures", "extra limbs", "missing limbs", "distorted body parts", "extra heads", "malformed anatomy", "unrealistic proportions", "cluttered composition", "excessive details", "blurry", "low quality", "low contrast", "messy linework", "unrecognizable subject", "dark background", "filled areas", "photorealistic", "sci-fi", "cyberpunk", "abstract", "surreal"]
 }`;
 
 const GEMINI_MODELS = ["gemini-pro", "gemini-1.0-pro", "gemini-1.5-flash", "gemini-2.0-flash"];
@@ -79,24 +64,25 @@ function extractRetryDelay(err: unknown): number {
 
 export function buildFallbackPrompt(userRequest: string): GeminiPromptResult {
   return {
-    style: "professional coloring book page, clean black and white line art, white background, sharp vector-like outlines, high contrast, printable quality",
+    style: "professional children's coloring book page, bold outline coloring book illustration, printable line art, vector-style black and white, white background",
     subject: userRequest,
-    scene_description: `Centered composition of ${userRequest}, subject occupying most of the page, simple natural background, realistic proportions, natural pose, clear and recognizable`,
+    scene_description: `Centered composition of ${userRequest}, subject occupying most of the page, correct anatomy and proportions, balanced uncluttered layout, simple background`,
     details: [
-      "correct anatomy and proportions",
-      "natural pose centered on page",
-      "simple supportive background",
-      "consistent clean line weight",
+      "correct anatomy with proper number of limbs",
+      "natural centered pose",
+      "simple supportive background only if relevant",
+      "thick smooth consistent vector-style outlines",
     ],
     complexity: "medium",
     negative_prompt: [
-      "blurry", "sketchy", "rough draft", "unfinished", "low quality", "low contrast",
-      "distorted anatomy", "extra limbs", "extra legs", "extra heads", "malformed body",
-      "duplicate body parts", "mutated animal", "unrealistic proportions",
-      "cluttered composition", "tiny details", "confusing background",
-      "futuristic city", "sci-fi environment", "cyberpunk style",
-      "abstract art", "surreal art", "messy linework",
-      "overlapping objects", "hard-to-color areas", "unreadable subject",
+      "color", "shading", "gradients", "shadows", "grayscale", "gray tones",
+      "sketch style", "pencil style", "rough lines", "hand-drawn imperfections",
+      "text", "captions", "watermarks", "logos", "signatures",
+      "extra limbs", "missing limbs", "distorted body parts", "extra heads", "malformed anatomy",
+      "unrealistic proportions", "cluttered composition", "excessive details",
+      "blurry", "low quality", "low contrast", "messy linework",
+      "unrecognizable subject", "dark background", "filled areas", "photorealistic",
+      "sci-fi", "cyberpunk", "abstract", "surreal",
     ],
   };
 }
@@ -166,22 +152,23 @@ export async function generateColoringPrompt(
 export function buildHuggingFacePrompt(gemini: GeminiPromptResult): string {
   const detailStr = gemini.details.join(", ");
   return [
-    "professional coloring book page",
-    "clean black and white line art",
+    "professional children's coloring book page",
+    "bold outline coloring book illustration",
+    "printable line art",
+    "vector-style black and white",
     "white background",
-    "sharp vector-like outlines",
-    "high contrast",
-    "thick clean consistent line weight",
+    "thick smooth consistent outlines",
+    "large open coloring areas",
     "no shading",
     "no color fills",
     "no gray tones",
-    "printable quality",
-    "clear subject separation",
-    "symmetrical balanced composition",
+    "no text",
+    "no watermark",
+    "crisp clean lines",
+    "8.5x11 printable quality",
     gemini.subject,
     gemini.scene_description,
     detailStr,
-    gemini.style,
   ]
     .filter(Boolean)
     .join(", ");
@@ -193,17 +180,28 @@ export function buildNegativePrompt(gemini: GeminiPromptResult): string {
     "color",
     "shading",
     "gradients",
+    "shadows",
+    "grayscale",
     "gray tones",
-    "realistic photo",
-    "blurry",
-    "dark background",
+    "sketch style",
+    "pencil style",
+    "rough lines",
+    "hand-drawn imperfections",
     "text",
     "watermark",
-    "filled areas",
+    "logo",
+    "signature",
     "extra limbs",
     "malformed anatomy",
     "distorted",
     "cluttered",
+    "excessive details",
+    "blurry",
+    "low quality",
+    "filled areas",
+    "photorealistic",
+    "realistic photo",
+    "dark background",
   ]
     .filter((v, i, arr) => arr.indexOf(v) === i)
     .join(", ");
