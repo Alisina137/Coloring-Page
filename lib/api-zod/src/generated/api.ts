@@ -38,7 +38,32 @@ export const GenerateColoringPageResponse = zod.object({
   description: zod.string().nullish(),
   imageData: zod.string(),
   coloredImageData: zod.string().nullish(),
+  seed: zod.number(),
   createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Colorize an existing B&W coloring page
+ */
+export const ColorizeColoringPageParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ColorizeColoringPageBody = zod.object({
+  gender: zod.enum(["Boy", "Girl", "Neutral"]),
+  genre: zod.string(),
+  ageGroup: zod.enum(["3-5", "6-8", "9+"]),
+  description: zod.string().nullish(),
+  artStyle: zod.string().nullish(),
+  background: zod.enum(["none", "simple", "detailed"]).nullish(),
+  characterName: zod.string().nullish(),
+  quality: zod.enum(["fast", "balanced", "premium"]).nullish(),
+  seed: zod.number(),
+});
+
+export const ColorizeColoringPageResponse = zod.object({
+  id: zod.number(),
+  coloredImageData: zod.string(),
 });
 
 /**

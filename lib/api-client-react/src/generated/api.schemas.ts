@@ -57,7 +57,52 @@ export interface GeneratedImage {
   imageData: string;
   /** @nullable */
   coloredImageData?: string | null;
+  /**
+   * Present in generate responses; absent in history responses (not stored in DB).
+   * @nullable
+   */
+  seed?: number | null;
   createdAt: string;
+}
+
+export type ColorizeColoringPageBodyGender =
+  (typeof ColorizeColoringPageBodyGender)[keyof typeof ColorizeColoringPageBodyGender];
+
+export const ColorizeColoringPageBodyGender = {
+  Boy: "Boy",
+  Girl: "Girl",
+  Neutral: "Neutral",
+} as const;
+
+export type ColorizeColoringPageBodyAgeGroup =
+  (typeof ColorizeColoringPageBodyAgeGroup)[keyof typeof ColorizeColoringPageBodyAgeGroup];
+
+export const ColorizeColoringPageBodyAgeGroup = {
+  "3-5": "3-5",
+  "6-8": "6-8",
+  "9+": "9+",
+} as const;
+
+export interface ColorizeColoringPageBody {
+  gender: ColorizeColoringPageBodyGender;
+  genre: string;
+  ageGroup: ColorizeColoringPageBodyAgeGroup;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  artStyle?: string | null;
+  /** @nullable */
+  background?: "none" | "simple" | "detailed" | null;
+  /** @nullable */
+  characterName?: string | null;
+  /** @nullable */
+  quality?: "fast" | "balanced" | "premium" | null;
+  seed: number;
+}
+
+export interface ColorizedImage {
+  id: number;
+  coloredImageData: string;
 }
 
 export interface ColorGuideResponse {

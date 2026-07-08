@@ -8,6 +8,9 @@ import {
   GenerateColoringPageResponse,
   GetColoringHistoryResponse,
   GetColoringStatsResponse,
+  ColorizeColoringPageParams,
+  ColorizeColoringPageBody,
+  ColorizeColoringPageResponse,
 } from "@workspace/api-zod";
 import { generateImageBuffer, generateColorIllustrationBuffer } from "../lib/image-gen";
 
@@ -36,29 +39,26 @@ const GENRES: Record<string, string> = {
   "Daily Life Scenes": "children playing, families, and everyday activities",
 };
 
-router.post("/coloring/generate", async (req, res): Promise<void> => {
-  const parsed = GenerateColoringPageBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const { gender, genre, ageGroup, description, artStyle, background, lineThickness, quality, characterName } = parsed.data;
+// Shared helper: build a deterministic master scene string from user inputs.
+function buildMasterScene(params: {
+  gender: string;
+  genre: string;
+  ageGroup: string;
+  description?: string | null;
+  artStyle?: string | null;
+  background?: string | null;
+  characterName?: string | null;
+}): string {
+  const { gender, genre, ageGroup, description, artStyle, background, characterName } = params;
   const genreDescription = GENRES[genre] ?? genre;
   const genderAdjective =
-    gender === "Boy"
-      ? "boy-friendly"
-      : gender === "Girl"
-        ? "girl-friendly"
-        : "child-friendly";
-
+    gender === "Boy" ? "boy-friendly" : gender === "Girl" ? "girl-friendly" : "child-friendly";
   const ageDescription =
     ageGroup === "3-5"
       ? "very simple, 3-4 large bold shapes, minimal details, thick lines, suitable for toddlers"
       : ageGroup === "6-8"
         ? "moderate complexity, clear distinct regions, some secondary details"
         : "detailed composition, fine elements, layered scene, suitable for older children";
-
   const customPart = description ? ` Featuring: ${description}.` : "";
   const artStylePart = artStyle ? ` Art style: ${artStyle}.` : "";
   const backgroundPart =
@@ -67,40 +67,36 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
       : background === "detailed"
         ? " Include a detailed scene background."
         : " Simple minimal background.";
+  const namePart = characterName ? ` The main character is named ${characterName}.` : "";
+  return `a ${genderAdjective} scene with ${genreDescription} theme.${customPart}${artStylePart}${backgroundPart}${namePart} Complexity: ${ageDescription}. Age group: ${ageGroup} years old.`;
+}
+
+router.post("/coloring/generate", async (req, res): Promise<void> => {
+  const parsed = GenerateColoringPageBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { gender, genre, ageGroup, description, artStyle, background, lineThickness, quality, characterName } = parsed.data;
+
+  const masterScene = buildMasterScene({ gender, genre, ageGroup, description, artStyle, background, characterName });
+
   const thicknessPart =
     lineThickness === "thin"
       ? " Use thin delicate outlines."
       : lineThickness === "thick"
         ? " Use very thick bold outlines."
         : " Use medium-weight outlines.";
-  const namePart = characterName ? ` The main character is named ${characterName}.` : "";
 
-  // ONE master scene description shared by BOTH the color illustration and the coloring
-  // page. It fully pins down the subject, composition, and background so both images
-  // depict the exact same characters/pose/objects/scene — only style (color vs. outline)
-  // and outline thickness (coloring-page-only) may differ below.
-  const masterScene = `a ${genderAdjective} scene with ${genreDescription} theme.${customPart}${artStylePart}${backgroundPart}${namePart} Complexity: ${ageDescription}. Age group: ${ageGroup} years old.`;
-
-  req.log.info({ gender, genre, ageGroup, description, artStyle, quality }, "Generating coloring page");
-
-  // Use the same seed for both generations so providers that support seeding (all four in
-  // our fallback chain do) produce matching diffusion noise, further reinforcing that the
-  // color illustration and the coloring page depict the same scene.
+  // Generate a seed that will be returned to the client so the colorize step
+  // can reuse it for matching diffusion noise between the B&W and color images.
   const seed = Math.floor(Math.random() * 2 ** 31);
 
-  // Step 1: Generate the full-color illustration from the master scene. This is the
-  // canonical depiction of the scene — the coloring page (step 2) must match it exactly,
-  // varying only in that it is a black-outline version.
-  let coloredBuffer: Buffer | null = null;
-  try {
-    coloredBuffer = await generateColorIllustrationBuffer(masterScene, quality ?? "balanced", seed);
-  } catch (err) {
-    req.log.warn({ err }, "Color hint illustration generation failed — continuing without a hint image");
-  }
-  const coloredImageData = coloredBuffer ? coloredBuffer.toString("base64") : null;
+  req.log.info({ gender, genre, ageGroup, description, artStyle, quality }, "Generating B&W coloring page");
 
-  // Step 2: Generate the B&W coloring page from the SAME master scene + seed, appending
-  // only coloring-specific style instructions (outline thickness). Never a different scene.
+  // Only generate the B&W coloring page here. The color illustration is generated
+  // on-demand when the user clicks "Generate Color Version".
   const imageBuffer = await generateImageBuffer(`${masterScene}${thicknessPart}`, {
     quality: quality ?? "balanced",
     seed,
@@ -109,10 +105,54 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
 
   const [page] = await db
     .insert(coloringPagesTable)
-    .values({ gender, genre, ageGroup, description: description ?? null, imageData, coloredImageData })
+    .values({ gender, genre, ageGroup, description: description ?? null, imageData, coloredImageData: null })
     .returning();
 
-  res.json(GenerateColoringPageResponse.parse(page));
+  // Return the seed so the client can pass it back in the colorize request,
+  // ensuring the color illustration uses the same diffusion noise as the B&W page.
+  res.json(GenerateColoringPageResponse.parse({ ...page, seed }));
+});
+
+router.post("/coloring/:id/colorize", async (req, res): Promise<void> => {
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const parsedParams = ColorizeColoringPageParams.safeParse({ id: parseInt(rawId, 10) });
+  if (!parsedParams.success) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+
+  const parsedBody = ColorizeColoringPageBody.safeParse(req.body);
+  if (!parsedBody.success) {
+    res.status(400).json({ error: parsedBody.error.message });
+    return;
+  }
+
+  const { id } = parsedParams.data;
+  const { gender, genre, ageGroup, description, artStyle, background, characterName, quality, seed } = parsedBody.data;
+
+  // Verify the page exists
+  const [existing] = await db.select().from(coloringPagesTable).where(eq(coloringPagesTable.id, id));
+  if (!existing) {
+    res.status(404).json({ error: "Coloring page not found" });
+    return;
+  }
+
+  // Reconstruct the exact same master scene from the original request params so the
+  // color illustration depicts the same subject/composition as the B&W coloring page.
+  const masterScene = buildMasterScene({ gender, genre, ageGroup, description, artStyle, background, characterName });
+
+  req.log.info({ id, genre, seed }, "Generating color illustration for existing coloring page");
+
+  const coloredBuffer = await generateColorIllustrationBuffer(masterScene, quality ?? "balanced", seed);
+  const coloredImageData = coloredBuffer.toString("base64");
+
+  // Persist the color illustration on the existing record
+  await db
+    .update(coloringPagesTable)
+    .set({ coloredImageData })
+    .where(eq(coloringPagesTable.id, id));
+
+  res.json(ColorizeColoringPageResponse.parse({ id, coloredImageData }));
 });
 
 router.get("/coloring/history", async (req, res): Promise<void> => {

@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import {
   useGenerateColoringPage,
+  useColorizeColoringPage,
   useGetColoringHistory,
   useGetProfiles,
   useGetColorGuide,
@@ -8,6 +9,7 @@ import {
   getGetColoringHistoryQueryKey,
   getGetColoringStatsQueryKey,
 } from "@workspace/api-client-react";
+import type { GenerateColoringPageBody } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -16,13 +18,20 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Loader2, Download, Wand2, RefreshCcw, Palette,
-  ListChecks, X, ChevronDown, ChevronUp, Eye, EyeOff,
+  ListChecks, X, ChevronDown, ChevronUp, Eye, EyeOff, Sparkles,
 } from "lucide-react";
 import jsPDF from "jspdf";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type ResultItem = { id: number; src: string; coloredSrc: string | null; genre: string };
+type ResultItem = {
+  id: number;
+  src: string;
+  coloredSrc: string | null;
+  genre: string;
+  seed: number;
+  originalBody: GenerateColoringPageBody;
+};
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -158,6 +167,8 @@ export function Home() {
   const [showColored, setShowColored] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [newBadge, setNewBadge] = useState<string | null>(null);
+  const [colorizingIds, setColorizingIds] = useState<Set<number>>(new Set());
+  const [colorizeErrors, setColorizeErrors] = useState<Record<number, string>>({});
 
   // Result state
   const [results, setResults] = useState<ResultItem[]>([]);
@@ -178,6 +189,7 @@ export function Home() {
   });
 
   const generateMutation = useGenerateColoringPage();
+  const colorizeMutation = useColorizeColoringPage();
 
   // Enhanced prompt preview (client-side, no API call)
   const previewPrompt = useMemo(() => {
@@ -203,8 +215,10 @@ export function Home() {
     setShowGuide(false);
     setIsGenerating(true);
     setGenProgress(0);
+    setColorizingIds(new Set());
+    setColorizeErrors({});
 
-    const body = {
+    const body: GenerateColoringPageBody = {
       gender,
       genre,
       ageGroup,
@@ -224,8 +238,10 @@ export function Home() {
         const item: ResultItem = {
           id: data.id,
           src: `data:image/png;base64,${data.imageData}`,
-          coloredSrc: data.coloredImageData ? `data:image/png;base64,${data.coloredImageData}` : null,
+          coloredSrc: null,
           genre: data.genre,
+          seed: data.seed ?? 0,
+          originalBody: body,
         };
         newResults.push(item);
         setResults([...newResults]);
@@ -247,6 +263,49 @@ export function Home() {
       if (badge) { setNewBadge(badge); setTimeout(() => setNewBadge(null), 4000); }
     }
   }, [gender, genre, ageGroup, description, profileId, artStyle, background, lineThickness, quality, variations, characterName, history.length]);
+
+  const handleColorize = useCallback(async () => {
+    if (!selectedResult) return;
+    const itemId = selectedResult.id;
+    setColorizeErrors(prev => { const n = { ...prev }; delete n[itemId]; return n; });
+    setColorizingIds(prev => new Set(prev).add(itemId));
+    try {
+      const { gender: g, genre: ge, ageGroup: ag, description: d, artStyle: as_, background: bg, characterName: cn, quality: q } = selectedResult.originalBody;
+      const data = await colorizeMutation.mutateAsync({
+        id: itemId,
+        data: {
+          gender: g,
+          genre: ge,
+          ageGroup: ag,
+          description: d ?? null,
+          artStyle: as_ ?? null,
+          background: bg ?? null,
+          characterName: cn ?? null,
+          quality: q ?? null,
+          seed: selectedResult.seed,
+        },
+      });
+      setResults(prev =>
+        prev.map(r =>
+          r.id === data.id
+            ? { ...r, coloredSrc: `data:image/png;base64,${data.coloredImageData}` }
+            : r
+        )
+      );
+      setShowColored(true);
+      queryClient.invalidateQueries({ queryKey: getGetColoringHistoryQueryKey() });
+    } catch (err) {
+      const msg = (err as { message?: string })?.message ?? "";
+      setColorizeErrors(prev => ({
+        ...prev,
+        [itemId]: msg.includes("403") || msg.includes("quota") || msg.includes("billing")
+          ? "The AI image service has reached its limit. Please try again later."
+          : "Couldn't generate the color version. Please try again.",
+      }));
+    } finally {
+      setColorizingIds(prev => { const n = new Set(prev); n.delete(itemId); return n; });
+    }
+  }, [selectedResult, colorizeMutation, queryClient]);
 
   const handleDownloadBW = useCallback(() => {
     if (!selectedResult) return;
@@ -573,39 +632,70 @@ export function Home() {
                   </div>
                 </div>
 
-                {/* Color Hint */}
+                {/* Color Version */}
                 <div className="flex flex-col gap-3 bg-card rounded-2xl border-2 border-border p-4 shadow-md">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-display font-bold text-sm">Color Hint</p>
-                      <p className="text-xs text-muted-foreground">Peek at the colors 🎨</p>
+                      <p className="font-display font-bold text-sm">Color Version</p>
+                      <p className="text-xs text-muted-foreground">Full color illustration 🎨</p>
                     </div>
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${showColored ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700"}`}>
-                      {showColored ? "Revealed" : "Blurred"}
-                    </span>
-                  </div>
-                  <div
-                    className="rounded-xl overflow-hidden bg-white border border-border cursor-pointer relative group"
-                    onClick={() => setShowColored(v => !v)}
-                  >
-                    {selectedResult.coloredSrc ? (
-                      <img src={selectedResult.coloredSrc} alt="Color hint"
-                        className="w-full object-contain transition-all duration-300"
-                        style={{ filter: showColored ? "none" : "blur(12px)" }} />
-                    ) : (
-                      <img src={selectedResult.src} alt="Color hint"
-                        className="w-full object-contain transition-all duration-300"
-                        style={{ filter: showColored ? "saturate(2) hue-rotate(10deg) contrast(1.1)" : "blur(10px) saturate(2)" }} />
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      <span className="bg-black/50 text-white text-xs px-3 py-1 rounded-full">
-                        {showColored ? "Click to blur" : "Click to reveal!"}
+                    {selectedResult.coloredSrc && (
+                      <span className={`text-xs font-semibold px-3 py-1 rounded-full ${showColored ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700"}`}>
+                        {showColored ? "Revealed" : "Blurred"}
                       </span>
-                    </div>
+                    )}
                   </div>
-                  <Button size="sm" className="w-full rounded-xl font-bold bg-accent hover:bg-accent/90 text-accent-foreground" onClick={handleDownloadColored}>
-                    <Download className="mr-2 h-4 w-4" />Download Full Color
-                  </Button>
+
+                  {selectedResult.coloredSrc ? (
+                    <>
+                      <div
+                        className="rounded-xl overflow-hidden bg-white border border-border cursor-pointer relative group"
+                        onClick={() => setShowColored(v => !v)}
+                      >
+                        <img
+                          src={selectedResult.coloredSrc}
+                          alt="Color version"
+                          className="w-full object-contain transition-all duration-300"
+                          style={{ filter: showColored ? "none" : "blur(12px)" }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <span className="bg-black/50 text-white text-xs px-3 py-1 rounded-full">
+                            {showColored ? "Click to blur" : "Click to reveal!"}
+                          </span>
+                        </div>
+                      </div>
+                      <Button size="sm" className="w-full rounded-xl font-bold bg-accent hover:bg-accent/90 text-accent-foreground" onClick={handleDownloadColored}>
+                        <Download className="mr-2 h-4 w-4" />Download Full Color
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex-1 rounded-xl bg-muted/40 border-2 border-dashed border-border flex flex-col items-center justify-center gap-3 py-10 px-4 text-center">
+                        <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                          <Sparkles className="h-6 w-6 text-accent" />
+                        </div>
+                        <p className="text-sm font-medium text-muted-foreground leading-snug">
+                          Ready to see this in full color?<br />
+                          <span className="text-xs">Generate a matching color illustration.</span>
+                        </p>
+                      </div>
+                      {colorizeErrors[selectedResult.id] && !colorizingIds.has(selectedResult.id) && (
+                        <p className="text-xs text-destructive text-center">{colorizeErrors[selectedResult.id]}</p>
+                      )}
+                      <Button
+                        size="sm"
+                        className="w-full rounded-xl font-bold bg-accent hover:bg-accent/90 text-accent-foreground"
+                        onClick={handleColorize}
+                        disabled={colorizingIds.has(selectedResult.id)}
+                      >
+                        {colorizingIds.has(selectedResult.id) ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Painting…</>
+                        ) : (
+                          <><Sparkles className="mr-2 h-4 w-4" />Generate Color Version</>
+                        )}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 

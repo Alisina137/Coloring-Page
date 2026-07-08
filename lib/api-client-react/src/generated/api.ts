@@ -20,6 +20,8 @@ import type {
   ChildProfile,
   ColorGuideResponse,
   ColoringStats,
+  ColorizeColoringPageBody,
+  ColorizedImage,
   CreateProfileBody,
   DailyChallengeResponse,
   ErrorResponse,
@@ -201,6 +203,93 @@ export const useGenerateColoringPage = <
   TContext
 > => {
   return useMutation(getGenerateColoringPageMutationOptions(options));
+};
+
+/**
+ * @summary Colorize an existing B&W coloring page
+ */
+export const getColorizeColoringPageUrl = (id: number) => {
+  return `/api/coloring/${id}/colorize`;
+};
+
+export const colorizeColoringPage = async (
+  id: number,
+  colorizeColoringPageBody: ColorizeColoringPageBody,
+  options?: RequestInit,
+): Promise<ColorizedImage> => {
+  return customFetch<ColorizedImage>(getColorizeColoringPageUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(colorizeColoringPageBody),
+  });
+};
+
+export const getColorizeColoringPageMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof colorizeColoringPage>>,
+    TError,
+    { id: number; data: BodyType<ColorizeColoringPageBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof colorizeColoringPage>>,
+  TError,
+  { id: number; data: BodyType<ColorizeColoringPageBody> },
+  TContext
+> => {
+  const mutationKey = ["colorizeColoringPage"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof colorizeColoringPage>>,
+    { id: number; data: BodyType<ColorizeColoringPageBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+    return colorizeColoringPage(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ColorizeColoringPageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof colorizeColoringPage>>
+>;
+export type ColorizeColoringPageMutationBody =
+  BodyType<ColorizeColoringPageBody>;
+export type ColorizeColoringPageMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Colorize an existing B&W coloring page
+ */
+export const useColorizeColoringPage = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof colorizeColoringPage>>,
+    TError,
+    { id: number; data: BodyType<ColorizeColoringPageBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof colorizeColoringPage>>,
+  TError,
+  { id: number; data: BodyType<ColorizeColoringPageBody> },
+  TContext
+> => {
+  return useMutation(getColorizeColoringPageMutationOptions(options));
 };
 
 /**
