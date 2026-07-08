@@ -19,8 +19,12 @@ All three artifacts run as workflows (`pnpm --filter <pkg> run dev`). The API se
 ## Environment
 
 - `DATABASE_URL` — Replit-managed Postgres, already provisioned. Schema lives in `lib/db/src/schema`; push changes with `pnpm --filter @workspace/db run push`.
-- `HF_API_TOKEN` — Hugging Face token used for image generation. Must have the "Make calls to Inference Providers" permission enabled on huggingface.co, or generation requests fail with a permissions error.
-- `OPENAI_API_KEY` / `GEMINI_API_KEY` — optional; if set, used ahead of/alongside Hugging Face (OpenAI DALL-E tried first for the main image if present; Gemini improves prompt quality).
+- `HF_API_TOKEN` (or `HUGGINGFACE_API_KEY`) — Hugging Face token used for image generation. Must have the "Make calls to Inference Providers" permission enabled on huggingface.co, or generation requests fail with a permissions error. Currently configured via `HUGGINGFACE_API_KEY`.
+- `OPENAI_API_KEY` / `GEMINI_API_KEY` — optional; if set, used ahead of/alongside Hugging Face (OpenAI DALL-E tried first for the main image if present; Gemini improves prompt quality). Not currently set.
+
+## Status
+
+Set up and verified working on 2026-07-08: all three artifacts (`coloring-book`, `api-server`, `mockup-sandbox`) run as workflows, the Postgres schema is pushed, and end-to-end coloring page generation (via Hugging Face) was confirmed working.
 
 ## Stack
 

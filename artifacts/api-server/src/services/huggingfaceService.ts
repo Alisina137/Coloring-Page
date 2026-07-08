@@ -1,6 +1,6 @@
 import { HfInference } from "@huggingface/inference";
 
-const hf = new HfInference(process.env["HF_API_TOKEN"] ?? "");
+const hf = new HfInference(process.env["HF_API_TOKEN"] ?? process.env["HUGGINGFACE_API_KEY"] ?? "");
 
 const MODEL = "stabilityai/stable-diffusion-xl-base-1.0";
 
