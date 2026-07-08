@@ -1,0 +1,260 @@
+The image generation workflow has a major consistency issue that must be fixed.
+
+CURRENT PROBLEM
+
+The application generates two completely different images:
+
+- A colored illustration.
+- A black-and-white coloring page.
+
+These two images do not represent the same scene.
+
+For example:
+
+The colored image shows children, a wagon, a forest and a house.
+
+The coloring page shows a random bear inside flowers.
+
+This is incorrect.
+
+The coloring page must ALWAYS represent the EXACT SAME scene as the colored illustration.
+
+The user should immediately recognize that the coloring page is simply the outline version of the colored image.
+
+----------------------------------------------------
+
+GOAL
+
+Generate TWO MATCHING images:
+
+1. Full color illustration
+2. Coloring page version
+
+Both must depict exactly the same:
+
+- characters
+- pose
+- objects
+- background
+- camera angle
+- composition
+- perspective
+- facial expressions
+- number of subjects
+- scenery
+
+The ONLY difference should be:
+
+- one is full color
+- one is black outline
+
+Nothing else should change.
+
+----------------------------------------------------
+
+PROMPT GENERATION
+
+Build ONE master prompt from the user's selections.
+
+Include every option selected during the previous steps.
+
+Examples include:
+
+- subject
+- theme
+- age
+- style
+- environment
+- accessories
+- animals
+- clothing
+- season
+- holiday
+- activity
+- camera angle
+- any custom text
+
+Every selected option must appear inside the generated prompt.
+
+Do NOT ignore any user selections.
+
+----------------------------------------------------
+
+MASTER PROMPT
+
+Create one complete prompt.
+
+Reuse this EXACT SAME prompt for both image generations.
+
+Do not generate separate prompts that describe different scenes.
+
+----------------------------------------------------
+
+COLOR IMAGE
+
+Generate the full-color illustration using the master prompt.
+
+Store this prompt.
+
+Store the generated image.
+
+----------------------------------------------------
+
+COLORING PAGE
+
+Generate the coloring page using THE SAME MASTER PROMPT.
+
+Append only coloring-specific instructions.
+
+Example additions:
+
+black and white coloring page
+
+clean outline
+
+vector line art
+
+thick black outlines
+
+closed shapes
+
+simple printable coloring page
+
+white background
+
+no grayscale
+
+no shadows
+
+no textures
+
+no color
+
+no gradients
+
+no cross hatching
+
+The original scene description MUST NOT change.
+
+----------------------------------------------------
+
+DO NOT
+
+Do NOT invent new characters.
+
+Do NOT invent new animals.
+
+Do NOT change the environment.
+
+Do NOT change the composition.
+
+Do NOT change the pose.
+
+Do NOT zoom differently.
+
+Do NOT crop differently.
+
+Do NOT generate a completely different illustration.
+
+----------------------------------------------------
+
+IMAGE CONSISTENCY
+
+Implement a shared GenerationContext object.
+
+It should contain:
+
+- original prompt
+- expanded prompt
+- user selections
+- image seed
+- style
+- aspect ratio
+
+Use this same context for both requests.
+
+Whenever supported by the provider:
+
+Use the SAME RANDOM SEED for both generations.
+
+This greatly improves consistency.
+
+----------------------------------------------------
+
+BETTER SOLUTION
+
+If the provider supports Image-to-Image or Edit APIs:
+
+Generate the colored illustration FIRST.
+
+Then convert THAT EXACT IMAGE into a coloring page.
+
+Do not ask the AI to imagine the scene again.
+
+Instead instruct it:
+
+"Convert this exact illustration into a printable coloring page while preserving every object, character, pose, perspective and composition."
+
+This is the preferred workflow whenever supported.
+
+----------------------------------------------------
+
+QUALITY REQUIREMENTS
+
+The coloring page should have:
+
+clean outlines
+
+closed regions
+
+consistent line thickness
+
+high contrast
+
+easy to color
+
+minimal tiny details
+
+no scribbles
+
+no sketch style
+
+no watercolor
+
+no pencil texture
+
+no shading
+
+The output should look like a professionally published coloring book.
+
+----------------------------------------------------
+
+VALIDATION
+
+Before returning the response, verify:
+
+✓ Same characters
+
+✓ Same background
+
+✓ Same camera angle
+
+✓ Same objects
+
+✓ Same composition
+
+✓ Same scene
+
+✓ Same story
+
+Only color vs outline should differ.
+
+----------------------------------------------------
+
+Also audit the existing codebase.
+
+Fix any logic where different prompts are accidentally being created for the colored image and the coloring page.
+
+There should be ONE master prompt shared by both generations.
+
+Refactor the code if necessary to guarantee this behavior throughout the application.
