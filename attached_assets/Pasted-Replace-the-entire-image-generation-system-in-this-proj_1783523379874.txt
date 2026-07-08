@@ -1,0 +1,203 @@
+Replace the entire image generation system in this project. Remove all existing image generation providers and their integrations, including:
+
+* Gemini API
+* OpenAI Images API
+* Any existing Hugging Face implementation (replace it with the new standardized implementation below)
+* Any unused image generation code, services, API clients, environment variables, and dependencies
+
+Implement a new provider-based image generation architecture with the following providers, in this priority order:
+
+1. Hugging Face (Primary)
+2. Cloudflare Workers AI (Fallback #1)
+3. Pollinations AI (Fallback #2)
+4. fal.ai (Fallback #3)
+
+## Requirements
+
+### Provider Architecture
+
+Create a clean provider abstraction.
+
+Example:
+
+* ImageGenerator interface
+* HuggingFaceProvider
+* CloudflareProvider
+* PollinationsProvider
+* FalProvider
+* ImageGenerationService
+
+The application should never directly call provider APIs. All requests should go through ImageGenerationService.
+
+---
+
+### Failover Logic
+
+When generating an image:
+
+1. Try Hugging Face first.
+2. If it fails (timeout, rate limit, quota exceeded, HTTP error, invalid response), automatically retry with Cloudflare Workers AI.
+3. If Cloudflare fails, automatically retry with Pollinations.
+4. If Pollinations fails, automatically retry with fal.ai.
+5. Only show an error if all four providers fail.
+
+This failover must happen automatically without user interaction.
+
+---
+
+### Prompt
+
+Use a prompt optimized for coloring books.
+
+Base prompt:
+
+"A cute {subject}, coloring book page, black outline only, clean thick line art, no shading, no grayscale, no color, white background, closed shapes, printable, vector-style illustration, suitable for children, centered composition, high contrast."
+
+Append negative instructions whenever supported:
+
+"No shadows, no gradients, no textures, no cross hatching, no background clutter, no realistic lighting, no fill colors."
+
+---
+
+### Environment Variables
+
+Use environment variables only.
+
+HUGGINGFACE_API_KEY=
+
+CLOUDFLARE_ACCOUNT_ID=
+
+CLOUDFLARE_API_TOKEN=
+
+POLLINATIONS_API_KEY= (only if required)
+
+FAL_API_KEY=
+
+Do not hardcode any keys.
+
+---
+
+### Hugging Face
+
+Use the official Hugging Face Inference API.
+
+Prefer FLUX models when available.
+
+Fallback to another supported line-art model if necessary.
+
+---
+
+### Cloudflare Workers AI
+
+Use the official Workers AI API.
+
+Implement the proper authentication using the Cloudflare Account ID and API Token.
+
+---
+
+### Pollinations
+
+Use the official Pollinations image generation endpoint.
+
+No authentication if not required.
+
+Support prompt encoding properly.
+
+---
+
+### fal.ai
+
+Use the official fal.ai REST API.
+
+Use an image generation model that is optimized for illustration or FLUX if available.
+
+---
+
+### Timeouts
+
+Set a timeout of 60 seconds per provider.
+
+If a provider exceeds the timeout, move to the next provider automatically.
+
+---
+
+### Retry Logic
+
+Retry once for transient errors before moving to the next provider.
+
+Do not retry on invalid API keys.
+
+---
+
+### Logging
+
+Log:
+
+* provider selected
+* request started
+* request completed
+* generation time
+* provider failure reason
+* automatic fallback activation
+
+Never log API keys.
+
+---
+
+### UI
+
+Do not change the current UI.
+
+The existing Generate button, loading indicators, progress UI, download flow, favorites, history, and saved images should continue to work exactly as they do now.
+
+Only replace the backend image generation implementation.
+
+---
+
+### Image Output
+
+Return generated images in the exact same format currently expected by the application.
+
+Ensure compatibility with:
+
+* preview screen
+* download
+* save
+* share
+* print
+* history
+
+---
+
+### Cleanup
+
+Remove all unused:
+
+* services
+* provider classes
+* API wrappers
+* imports
+* dependencies
+* environment variables
+* configuration
+* helper functions
+
+related to Gemini, OpenAI, and the previous implementation.
+
+---
+
+### Code Quality
+
+* Use TypeScript best practices.
+* Avoid duplicated code.
+* Make providers modular and easily extendable.
+* Handle all errors gracefully.
+* Keep the code production-ready.
+
+When finished:
+
+1. Verify the project builds successfully.
+2. Verify image generation works using the new provider chain.
+3. Verify automatic fallback works correctly.
+4. Remove any dead code.
+5. Ensure there are no references remaining to Gemini or OpenAI anywhere in the project.

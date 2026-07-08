@@ -9,9 +9,7 @@ import {
   GetColoringHistoryResponse,
   GetColoringStatsResponse,
 } from "@workspace/api-zod";
-import { generateImageBuffer } from "../lib/image-gen";
-import { generateColorIllustrationHF } from "../services/huggingfaceService";
-import { generateColorIllustration } from "../services/openaiService";
+import { generateImageBuffer, generateColorIllustrationBuffer } from "../lib/image-gen";
 
 const router: IRouter = Router();
 
@@ -106,28 +104,13 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
     .filter(Boolean)
     .join(", ");
 
-  const colorHintQuality = quality === "premium" ? "hd" : "standard";
-
-  // Step 3: Generate Color Hint as a brand-new full-color illustration via DALL-E 3.
-  // Falls back to HuggingFace text-to-image (also fresh generation, not img2img).
-  const stepsMap: Record<string, number> = { fast: 20, balanced: 25, premium: 35 };
-  const colorSteps = stepsMap[quality ?? "balanced"] ?? 25;
-
+  // Step 3: Generate the Color Hint as a brand-new full-color illustration, going
+  // through the same provider chain (Hugging Face -> Cloudflare -> Pollinations -> fal.ai).
   let coloredBuffer: Buffer | null = null;
-  if (process.env["OPENAI_API_KEY"]) {
-    try {
-      coloredBuffer = await generateColorIllustration(sceneForColor, colorHintQuality);
-      req.log.info("Color Hint generated via DALL-E 3 (fresh illustration)");
-    } catch (err) {
-      req.log.warn({ err }, "DALL-E 3 color illustration failed — falling back to HuggingFace");
-    }
-  }
-  if (!coloredBuffer) {
-    coloredBuffer = await generateColorIllustrationHF(sceneForColor, colorSteps).catch((err) => {
-      req.log.warn({ err }, "HuggingFace color illustration also failed");
-      return null;
-    });
-    if (coloredBuffer) req.log.info("Color Hint generated via HuggingFace (fresh illustration)");
+  try {
+    coloredBuffer = await generateColorIllustrationBuffer(sceneForColor, quality ?? "balanced");
+  } catch (err) {
+    req.log.warn({ err }, "Color hint illustration generation failed — continuing without a hint image");
   }
   const coloredImageData = coloredBuffer ? coloredBuffer.toString("base64") : null;
 
