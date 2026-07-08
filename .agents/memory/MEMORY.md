@@ -1,0 +1,2 @@
+- [Hugging Face inference tokens](hf-inference-token-permission.md) — HF tokens need "Make calls to Inference Providers" enabled or textToImage/inference calls fail with a permissions error even though the token is valid.
+- [HF @huggingface/inference textToImage typing](hf-texttoimage-blob-typing.md) — must pass `{ outputType: "blob" }` explicitly or TS infers `Promise<string>` and `.arrayBuffer()` calls fail typecheck.
