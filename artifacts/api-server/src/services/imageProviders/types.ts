@@ -9,6 +9,13 @@ export interface ImageGenerationParams {
   height?: number;
   /** Diffusion steps, where supported by the provider/model. */
   steps?: number;
+  /**
+   * Random seed, where supported by the provider/model. Passing the same seed for two
+   * generations (e.g. a color illustration and its matching coloring page) makes the
+   * underlying diffusion noise identical, which meaningfully improves composition
+   * consistency between the two outputs even though the prompts differ slightly.
+   */
+  seed?: number;
 }
 
 export interface ImageGenerationResult {

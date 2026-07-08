@@ -75,44 +75,37 @@ router.post("/coloring/generate", async (req, res): Promise<void> => {
         : " Use medium-weight outlines.";
   const namePart = characterName ? ` The main character is named ${characterName}.` : "";
 
-  const userRequest = `A ${genderAdjective} coloring book page with ${genreDescription} theme.${customPart}${artStylePart}${backgroundPart}${thicknessPart}${namePart} Complexity: ${ageDescription}. Age group: ${ageGroup} years old.`;
+  // ONE master scene description shared by BOTH the color illustration and the coloring
+  // page. It fully pins down the subject, composition, and background so both images
+  // depict the exact same characters/pose/objects/scene — only style (color vs. outline)
+  // and outline thickness (coloring-page-only) may differ below.
+  const masterScene = `a ${genderAdjective} scene with ${genreDescription} theme.${customPart}${artStylePart}${backgroundPart}${namePart} Complexity: ${ageDescription}. Age group: ${ageGroup} years old.`;
 
   req.log.info({ gender, genre, ageGroup, description, artStyle, quality }, "Generating coloring page");
 
-  // Step 1: Generate the B&W coloring page
-  const imageBuffer = await generateImageBuffer(userRequest, { quality: quality ?? "balanced" });
-  const imageData = imageBuffer.toString("base64");
+  // Use the same seed for both generations so providers that support seeding (all four in
+  // our fallback chain do) produce matching diffusion noise, further reinforcing that the
+  // color illustration and the coloring page depict the same scene.
+  const seed = Math.floor(Math.random() * 2 ** 31);
 
-  // Step 2: Build a rich scene description for the Color Hint illustration.
-  // The Color Hint is a FRESH full-color illustration generated from scratch —
-  // NOT a recoloring or tinting of the B&W page. This ensures vibrant, genuine color.
-  const guideSteps = COLOR_GUIDES[genre] ?? [];
-  const colorKeywords = guideSteps
-    .slice(0, 5)
-    .map((s) => s.replace(/^step \d+:\s*/i, "").replace(/\.$/, ""))
-    .join("; ");
-
-  // Build a detailed scene description combining all user choices
-  const sceneForColor = [
-    `${genderAdjective} ${genreDescription} scene`,
-    description ? description : null,
-    artStyle ? `${artStyle} art style` : null,
-    characterName ? `with a character named ${characterName}` : null,
-    colorKeywords || null,
-    "for children, beautiful atmosphere",
-  ]
-    .filter(Boolean)
-    .join(", ");
-
-  // Step 3: Generate the Color Hint as a brand-new full-color illustration, going
-  // through the same provider chain (Hugging Face -> Cloudflare -> Pollinations -> fal.ai).
+  // Step 1: Generate the full-color illustration from the master scene. This is the
+  // canonical depiction of the scene — the coloring page (step 2) must match it exactly,
+  // varying only in that it is a black-outline version.
   let coloredBuffer: Buffer | null = null;
   try {
-    coloredBuffer = await generateColorIllustrationBuffer(sceneForColor, quality ?? "balanced");
+    coloredBuffer = await generateColorIllustrationBuffer(masterScene, quality ?? "balanced", seed);
   } catch (err) {
     req.log.warn({ err }, "Color hint illustration generation failed — continuing without a hint image");
   }
   const coloredImageData = coloredBuffer ? coloredBuffer.toString("base64") : null;
+
+  // Step 2: Generate the B&W coloring page from the SAME master scene + seed, appending
+  // only coloring-specific style instructions (outline thickness). Never a different scene.
+  const imageBuffer = await generateImageBuffer(`${masterScene}${thicknessPart}`, {
+    quality: quality ?? "balanced",
+    seed,
+  });
+  const imageData = imageBuffer.toString("base64");
 
   const [page] = await db
     .insert(coloringPagesTable)

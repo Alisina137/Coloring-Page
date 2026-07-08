@@ -21,6 +21,7 @@ export const pollinationsProvider: ImageGenerator = {
     url.searchParams.set("height", String(params.height ?? 1024));
     url.searchParams.set("nologo", "true");
     url.searchParams.set("model", "flux");
+    if (params.seed !== undefined) url.searchParams.set("seed", String(params.seed));
 
     const apiKey = process.env["POLLINATIONS_API_KEY"];
     if (apiKey) url.searchParams.set("token", apiKey);

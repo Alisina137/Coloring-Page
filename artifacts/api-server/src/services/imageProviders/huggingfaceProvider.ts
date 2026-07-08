@@ -38,6 +38,7 @@ async function runModel(
         width: params.width ?? 1024,
         height: params.height ?? 1024,
         num_inference_steps: params.steps ?? 25,
+        seed: params.seed,
       },
     },
     { outputType: "blob", signal }

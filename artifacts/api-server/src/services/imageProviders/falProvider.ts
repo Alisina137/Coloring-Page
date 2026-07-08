@@ -36,6 +36,7 @@ export const falProvider: ImageGenerator = {
             height: params.height ?? 1024,
           },
           num_inference_steps: Math.min(params.steps ?? 4, 8),
+          ...(params.seed !== undefined ? { seed: params.seed } : {}),
         }),
       });
     } catch (err) {

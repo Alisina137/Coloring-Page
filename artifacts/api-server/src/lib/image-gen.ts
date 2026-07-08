@@ -23,6 +23,12 @@ export type ImageQuality = "fast" | "balanced" | "premium";
 export interface GenerateImageOptions {
   previousScenes?: string[];
   quality?: ImageQuality;
+  /**
+   * Random seed to pass to the provider. Passing the same seed used for a paired
+   * generation (e.g. the color illustration) keeps the underlying diffusion noise
+   * identical, improving consistency between the two outputs.
+   */
+  seed?: number;
 }
 
 const STEPS_BY_QUALITY: Record<ImageQuality, number> = { fast: 15, balanced: 25, premium: 35 };
@@ -38,7 +44,11 @@ function buildColoringPrompt(subject: string): { prompt: string; negativePrompt:
 /**
  * Generates a black-and-white coloring book page. Runs through the provider chain
  * (Hugging Face -> Cloudflare Workers AI -> Pollinations -> fal.ai) via ImageGenerationService,
- * with automatic failover. Results are cached in-memory by prompt/quality.
+ * with automatic failover. Results are cached in-memory by prompt/quality/seed.
+ *
+ * Callers that want a coloring page to match a companion color illustration must pass the
+ * SAME scene description text (`userRequest`) and the SAME `options.seed` used for that
+ * illustration — only the style suffix appended by `buildColoringPrompt` should differ.
  */
 export async function generateImageBuffer(
   userRequest: string,
@@ -46,9 +56,10 @@ export async function generateImageBuffer(
 ): Promise<Buffer> {
   const quality = (typeof options === "object" ? options.quality : undefined) ?? "balanced";
   const previousScenes = typeof options === "object" ? options.previousScenes : undefined;
+  const seed = typeof options === "object" ? options.seed : undefined;
   const steps = STEPS_BY_QUALITY[quality];
 
-  const key = cacheKey(userRequest + (previousScenes?.join("|") ?? "") + quality);
+  const key = cacheKey(userRequest + (previousScenes?.join("|") ?? "") + quality + (seed ?? ""));
   const cached = imageCache.get(key);
   if (cached) return cached;
 
@@ -59,7 +70,7 @@ export async function generateImageBuffer(
 
   const { prompt, negativePrompt } = buildColoringPrompt(subject);
 
-  const { buffer, provider } = await generateImage({ prompt, negativePrompt, steps });
+  const { buffer, provider } = await generateImage({ prompt, negativePrompt, steps, seed });
   logger.info({ provider, quality, steps }, "Coloring page image generated");
 
   cacheSet(key, buffer);
@@ -80,12 +91,13 @@ function buildColorIllustrationPrompt(subject: string): { prompt: string; negati
  */
 export async function generateColorIllustrationBuffer(
   sceneDescription: string,
-  quality: ImageQuality = "balanced"
+  quality: ImageQuality = "balanced",
+  seed?: number
 ): Promise<Buffer> {
   const steps = STEPS_BY_QUALITY[quality];
   const { prompt, negativePrompt } = buildColorIllustrationPrompt(sceneDescription);
 
-  const { buffer, provider } = await generateImage({ prompt, negativePrompt, steps });
+  const { buffer, provider } = await generateImage({ prompt, negativePrompt, steps, seed });
   logger.info({ provider, quality, steps }, "Color hint illustration generated");
 
   return buffer;

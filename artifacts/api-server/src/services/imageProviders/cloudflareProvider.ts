@@ -30,6 +30,7 @@ export const cloudflareProvider: ImageGenerator = {
           width: params.width ?? 1024,
           height: params.height ?? 1024,
           num_steps: Math.min(params.steps ?? 25, 20), // Workers AI caps num_steps at 20
+          ...(params.seed !== undefined ? { seed: params.seed } : {}),
         }),
       });
     } catch (err) {
